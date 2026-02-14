@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "installCommand": "cd saa-s-app-skeleton && pnpm install",
+  "installCommand": "cd saa-s-app-skeleton && pnpm install --no-frozen-lockfile",
   "buildCommand": "cd saa-s-app-skeleton && pnpm run build",
   "outputDirectory": "saa-s-app-skeleton/.next"
 }
