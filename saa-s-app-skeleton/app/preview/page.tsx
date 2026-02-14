@@ -236,14 +236,14 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background landing-shell">
       <Navbar />
 
-      <main className="pt-20 pb-6 h-screen flex flex-col">
+      <main className="pt-24 pb-6 h-screen flex flex-col">
         <div className="flex-1 flex overflow-hidden gap-6 px-6">
           {/* LEFT: A4 Pages Preview - Scrollable */}
           <motion.div
-            className="flex-1 overflow-hidden rounded-2xl"
+            className="flex-1 overflow-hidden rounded-2xl glow-panel slow-transition"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
           >
@@ -278,13 +278,13 @@ export default function PreviewPage() {
                     size="sm"
                     onClick={() => setCurrentPageIndex(Math.max(0, currentPageIndex - 1))}
                     disabled={currentPageIndex === 0}
-                    className="gap-2 hover-glow"
+                    className="gap-2 cta-secondary"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Previous
                   </Button>
 
-                  <div className="px-4 py-2 rounded-lg bg-muted border border-muted text-sm font-semibold text-foreground">
+                  <div className="px-4 py-2 rounded-lg glow-panel text-sm font-semibold text-foreground">
                     {currentPageIndex + 1} / {totalPages}
                   </div>
 
@@ -293,7 +293,7 @@ export default function PreviewPage() {
                     size="sm"
                     onClick={() => setCurrentPageIndex(Math.min(totalPages - 1, currentPageIndex + 1))}
                     disabled={currentPageIndex === totalPages - 1}
-                    className="gap-2 hover-glow"
+                    className="gap-2 cta-secondary"
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
@@ -309,7 +309,7 @@ export default function PreviewPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <ScrollArea className="h-full rounded-2xl border border-muted watery-panel">
+            <ScrollArea className="h-full rounded-2xl glow-panel slow-transition">
               <div className="p-6 space-y-6 h-full">
                 <div className="flex items-center justify-between">
                   <div>
@@ -329,13 +329,13 @@ export default function PreviewPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover"
+                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80"
                       onClick={() => editorRef.current?.setParagraph()}
                     >
                       Paragraph
                     </button>
                     <select
-                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover"
+                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover text-foreground"
                       onChange={(e) => {
                         const level = Number(e.target.value) as 1 | 2 | 3
                         editorRef.current?.setHeading(level)
@@ -349,7 +349,7 @@ export default function PreviewPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <select
-                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover"
+                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover text-foreground"
                       value={fontFamily}
                       onChange={(e) => setFontFamily(e.target.value)}
                     >
@@ -358,7 +358,7 @@ export default function PreviewPage() {
                       ))}
                     </select>
                     <select
-                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover"
+                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover text-foreground"
                       value={fontSize}
                       onChange={(e) => setFontSize(e.target.value)}
                     >
@@ -369,7 +369,7 @@ export default function PreviewPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover">
+                    <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80">
                       Text Color
                       <input
                         type="color"
@@ -378,7 +378,7 @@ export default function PreviewPage() {
                         className="h-6 w-8 rounded"
                       />
                     </label>
-                    <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover">
+                    <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80">
                       Highlight
                       <input
                         type="color"
@@ -396,23 +396,23 @@ export default function PreviewPage() {
                     <Palette className="h-4 w-4" /> Formatting
                   </div>
                   <div className="grid grid-cols-4 gap-2">
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.toggleBold()}><Bold className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.toggleItalic()}><Italic className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.toggleUnderline()}><Underline className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.toggleStrike()}><Strikethrough className="h-4 w-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleBold()}><Bold className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleItalic()}><Italic className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleUnderline()}><Underline className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleStrike()}><Strikethrough className="w-4 h-4" /></button>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.toggleBulletList()}><List className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.toggleOrderedList()}><ListOrdered className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.insertHorizontalRule()}><SeparatorHorizontal className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.undo()}><Undo className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.redo()}><Redo className="h-4 w-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleBulletList()}><List className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleOrderedList()}><ListOrdered className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.insertHorizontalRule()}><SeparatorHorizontal className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.undo()}><Undo className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.redo()}><Redo className="w-4 h-4" /></button>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.setTextAlign('left')}><AlignLeft className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.setTextAlign('center')}><AlignCenter className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.setTextAlign('right')}><AlignRight className="h-4 w-4" /></button>
-                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover" onClick={() => editorRef.current?.setTextAlign('justify')}><AlignJustify className="h-4 w-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.setTextAlign('left')}><AlignLeft className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.setTextAlign('center')}><AlignCenter className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.setTextAlign('right')}><AlignRight className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.setTextAlign('justify')}><AlignJustify className="w-4 h-4" /></button>
                   </div>
                   <div className="grid grid-cols-[1fr_auto] gap-2">
                     <input
@@ -420,11 +420,11 @@ export default function PreviewPage() {
                       value={linkUrl}
                       onChange={(e) => setLinkUrl(e.target.value)}
                       placeholder="https://example.com"
-                      className="h-9 rounded-lg border px-3 text-xs watery-input glow-hover"
+                      className="h-9 rounded-lg border px-3 text-xs watery-input glow-hover text-foreground placeholder:text-muted-foreground"
                     />
                     <button
                       type="button"
-                      className="h-9 rounded-lg border px-3 text-xs watery-input glow-hover"
+                      className="h-9 rounded-lg border px-3 text-xs watery-input glow-hover text-foreground/80"
                       onClick={() => {
                         if (linkUrl.trim()) {
                           editorRef.current?.setLink(linkUrl.trim())
@@ -450,7 +450,7 @@ export default function PreviewPage() {
                     max="64"
                     value={pagePadding}
                     onChange={(e) => setPagePadding(parseInt(e.target.value))}
-                    className="w-full glow-hover"
+                    className="w-full glow-hover slow-transition"
                   />
 
                   <label className="text-xs text-muted-foreground">Line Height: {lineHeight.toFixed(1)}</label>
@@ -460,10 +460,10 @@ export default function PreviewPage() {
                     max="20"
                     value={Math.round(lineHeight * 10)}
                     onChange={(e) => setLineHeight(parseInt(e.target.value) / 10)}
-                    className="w-full glow-hover"
+                    className="w-full glow-hover slow-transition"
                   />
 
-                  <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover">
+                  <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80">
                     Page Tint
                     <input
                       type="color"
@@ -476,14 +476,14 @@ export default function PreviewPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover"
+                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80"
                       onClick={() => setShowBorder((v) => !v)}
                     >
                       {showBorder ? 'Hide Border' : 'Show Border'}
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover"
+                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80"
                       onClick={() => setShowFooter((v) => !v)}
                     >
                       {showFooter ? 'Hide Footer' : 'Show Footer'}
@@ -511,7 +511,7 @@ export default function PreviewPage() {
                   />
                   <label
                     htmlFor="image-upload"
-                    className="block rounded-lg border px-3 py-2 text-xs watery-input glow-hover cursor-pointer text-center"
+                    className="block rounded-lg border px-3 py-2 text-xs watery-input glow-hover cursor-pointer text-center text-foreground/80"
                   >
                     Upload Image
                   </label>
@@ -527,7 +527,7 @@ export default function PreviewPage() {
                     placeholder="Describe what you want to change or improve..."
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
-                    className="w-full border rounded-lg bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none h-28 watery-input glow-hover"
+                    className="w-full border rounded-lg bg-background/80 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none h-28 watery-input glow-hover"
                   />
                 </div>
 
@@ -542,7 +542,7 @@ export default function PreviewPage() {
                     max="50"
                     value={maxPages}
                     onChange={(e) => setMaxPages(parseInt(e.target.value))}
-                    className="w-full cursor-pointer glow-hover"
+                    className="w-full cursor-pointer glow-hover slow-transition"
                   />
                   <p className="text-xs text-muted-foreground">Range: 5–50 pages</p>
                 </div>
@@ -552,7 +552,7 @@ export default function PreviewPage() {
                   <Button
                     onClick={handleRegenerate}
                     disabled={!feedback.trim() || isRegenerating}
-                    className="w-full gap-2 glow-hover watery-cta"
+                    className="w-full gap-2 cta-primary"
                   >
                     {isRegenerating ? (
                       <>
@@ -570,7 +570,7 @@ export default function PreviewPage() {
                   <Button
                     onClick={handleDownloadPDF}
                     disabled={isDownloading}
-                    className="w-full gap-2 glow-hover watery-cta-secondary"
+                    className="w-full gap-2 cta-secondary"
                   >
                     {isDownloading ? (
                       <>
@@ -586,7 +586,7 @@ export default function PreviewPage() {
                   </Button>
 
                   <Link href="/" className="block">
-                    <Button variant="outline" className="w-full glow-hover">
+                    <Button variant="outline" className="w-full cta-secondary">
                       Back to Home
                     </Button>
                   </Link>

@@ -7,14 +7,14 @@ import { ArrowRight, Check } from 'lucide-react'
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background landing-shell">
       <Navbar />
 
-      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+      <main className="pt-24 pb-14 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <motion.section
             id="mission"
-            className="text-center mb-16"
+            className="text-center mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -26,7 +26,7 @@ export default function AboutPage() {
             </p>
           </motion.section>
 
-          <section id="values" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
+          <section id="values" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
             {[
               {
                 title: 'Speed with precision',
@@ -41,14 +41,14 @@ export default function AboutPage() {
                 desc: 'We process repo data in memory and never store your source code.'
               }
             ].map((value) => (
-              <div key={value.title} className="rounded-2xl border border-muted bg-muted/5 p-6">
+              <div key={value.title} className="rounded-2xl glow-panel slow-transition p-6">
                 <h3 className="text-xl font-semibold text-foreground">{value.title}</h3>
                 <p className="text-muted-foreground mt-3">{value.desc}</p>
               </div>
             ))}
           </section>
 
-          <section id="team" className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+          <section id="team" className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-14">
             <div>
               <h2 className="text-3xl font-bold text-foreground">A product team obsessed with clarity</h2>
               <p className="text-muted-foreground mt-4">
@@ -68,7 +68,7 @@ export default function AboutPage() {
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl border border-muted bg-gradient-to-br from-primary/10 via-background to-accent/10 p-8">
+            <div className="rounded-2xl glow-panel slow-transition p-8">
               <p className="text-sm uppercase tracking-widest text-muted-foreground">Today</p>
               <h3 className="text-3xl font-bold text-foreground mt-2">10K+ teams</h3>
               <p className="text-muted-foreground mt-3">
@@ -77,7 +77,7 @@ export default function AboutPage() {
             </div>
           </section>
 
-          <section id="careers" className="rounded-2xl border border-muted bg-muted/10 p-8 mb-20">
+          <section id="careers" className="rounded-2xl glow-panel slow-transition p-8 mb-14">
             <h2 className="text-3xl font-bold text-foreground">Careers</h2>
             <p className="text-muted-foreground mt-3">
               We are hiring across engineering, product, and customer success. If you want to build the future of
@@ -85,7 +85,7 @@ export default function AboutPage() {
             </p>
             <Link
               href="/docs#guides"
-              className="inline-flex items-center gap-2 mt-6 px-5 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
+              className="inline-flex items-center gap-2 mt-6 px-5 py-2 rounded-lg font-semibold cta-primary"
             >
               Explore open roles
               <ArrowRight className="w-4 h-4" />
@@ -100,12 +100,12 @@ export default function AboutPage() {
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/docs#quickstart"
-                className="px-5 py-2 rounded-lg border border-muted hover:border-primary/50 hover-glow"
+                className="px-5 py-2 rounded-lg font-semibold cta-secondary"
               >
                 Read the docs
               </Link>
               <button
-                className="px-5 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
+                className="px-5 py-2 rounded-lg font-semibold cta-primary"
                 onClick={() => window.location.href = 'mailto:hello@twofasttwomcp.com'}
               >
                 Email us

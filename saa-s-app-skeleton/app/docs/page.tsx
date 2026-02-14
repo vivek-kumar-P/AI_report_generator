@@ -7,13 +7,13 @@ import { Check, FileText, Download, ArrowRight } from 'lucide-react'
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background landing-shell">
       <Navbar />
 
-      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+      <main className="pt-24 pb-14 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <motion.section
-            className="text-center mb-16"
+            className="text-center mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -24,7 +24,7 @@ export default function DocsPage() {
             </p>
           </motion.section>
 
-          <section id="quickstart" className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start mb-20">
+          <section id="quickstart" className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start mb-14">
             <div>
               <h2 className="text-3xl font-bold text-foreground">Quickstart</h2>
               <p className="text-muted-foreground mt-3">
@@ -45,13 +45,13 @@ export default function DocsPage() {
               </div>
               <Link
                 href="/#how-it-works"
-                className="inline-flex items-center gap-2 mt-6 px-5 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
+                className="inline-flex items-center gap-2 mt-6 px-5 py-2 rounded-lg font-semibold cta-primary"
               >
                 See the workflow
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="rounded-2xl border border-muted bg-muted/5 p-6">
+            <div className="rounded-2xl glow-panel slow-transition p-6">
               <p className="text-xs uppercase tracking-widest text-muted-foreground">CLI-free</p>
               <h3 className="text-2xl font-bold text-foreground mt-2">Generate straight from the UI</h3>
               <p className="text-muted-foreground mt-3">
@@ -60,7 +60,7 @@ export default function DocsPage() {
             </div>
           </section>
 
-          <section id="guides" className="mb-20">
+          <section id="guides" className="mb-14">
             <h2 className="text-3xl font-bold text-foreground">Guides</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
               {[
@@ -77,7 +77,7 @@ export default function DocsPage() {
                   desc: 'Share, review, and approve reports with your team.'
                 }
               ].map((guide) => (
-                <div key={guide.title} className="rounded-2xl border border-muted bg-muted/5 p-6">
+                <div key={guide.title} className="rounded-2xl glow-panel slow-transition p-6">
                   <h3 className="text-lg font-semibold text-foreground">{guide.title}</h3>
                   <p className="text-muted-foreground mt-3">{guide.desc}</p>
                 </div>
@@ -85,7 +85,7 @@ export default function DocsPage() {
             </div>
           </section>
 
-          <section id="api" className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start mb-20">
+          <section id="api" className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start mb-14">
             <div>
               <h2 className="text-3xl font-bold text-foreground">API access</h2>
               <p className="text-muted-foreground mt-3">
@@ -105,18 +105,18 @@ export default function DocsPage() {
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl border border-muted bg-muted/5 p-6">
+            <div className="rounded-2xl glow-panel slow-transition p-6">
               <div className="flex items-center gap-2 text-primary">
                 <FileText className="w-5 h-5" />
                 <span className="text-sm font-semibold uppercase tracking-widest">Preview</span>
               </div>
-              <pre className="mt-4 text-xs text-muted-foreground bg-background/60 rounded-lg p-4 overflow-x-auto">
+              <pre className="mt-4 text-xs text-muted-foreground bg-black/40 rounded-lg p-4 overflow-x-auto">
 {`POST /api/reports\n{\n  "repo": "github.com/org/project",\n  "maxPages": 12,\n  "template": "stakeholder"\n}`}
               </pre>
             </div>
           </section>
 
-          <section id="export" className="rounded-2xl border border-muted bg-muted/10 p-8 mb-20">
+          <section id="export" className="rounded-2xl glow-panel slow-transition p-8 mb-14">
             <div className="flex items-center gap-3 text-primary">
               <Download className="w-5 h-5" />
               <span className="text-sm font-semibold uppercase tracking-widest">PDF export</span>
@@ -128,9 +128,9 @@ export default function DocsPage() {
             </p>
           </section>
 
-          <section id="release-notes" className="mb-20">
+          <section id="release-notes" className="mb-14">
             <h2 className="text-3xl font-bold text-foreground">Release notes</h2>
-            <div className="rounded-2xl border border-muted bg-muted/5 p-6 mt-6">
+            <div className="rounded-2xl glow-panel slow-transition p-6 mt-6">
               <p className="text-sm text-muted-foreground">February 2026</p>
               <h3 className="text-xl font-semibold text-foreground mt-2">PDF export rebuilt</h3>
               <p className="text-muted-foreground mt-3">
@@ -139,20 +139,24 @@ export default function DocsPage() {
             </div>
           </section>
 
-          <section id="privacy" className="mb-12">
-            <h2 className="text-3xl font-bold text-foreground">Privacy</h2>
-            <p className="text-muted-foreground mt-3">
-              Repository contents are processed in memory and never stored by default. Export files remain on your device
-              unless you explicitly share them.
-            </p>
+          <section id="privacy" className="mb-10">
+            <div className="rounded-2xl glow-panel slow-transition p-6">
+              <h2 className="text-3xl font-bold text-foreground">Privacy</h2>
+              <p className="text-muted-foreground mt-3">
+                Repository contents are processed in memory and never stored by default. Export files remain on your device
+                unless you explicitly share them.
+              </p>
+            </div>
           </section>
 
-          <section id="terms" className="mb-12">
-            <h2 className="text-3xl font-bold text-foreground">Terms</h2>
-            <p className="text-muted-foreground mt-3">
-              TwoFastTwoMCP is provided as-is. Enterprise agreements are available for teams with custom security and
-              compliance requirements.
-            </p>
+          <section id="terms" className="mb-10">
+            <div className="rounded-2xl glow-panel slow-transition p-6">
+              <h2 className="text-3xl font-bold text-foreground">Terms</h2>
+              <p className="text-muted-foreground mt-3">
+                TwoFastTwoMCP is provided as-is. Enterprise agreements are available for teams with custom security and
+                compliance requirements.
+              </p>
+            </div>
           </section>
         </div>
       </main>

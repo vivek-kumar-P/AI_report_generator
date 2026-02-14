@@ -126,9 +126,8 @@ export async function callToolHandler(
   - Format as a single markdown document suitable for A4 printing.
   `
 
-    return new Promise((resolve, reject) => {
-      // Call OpenRouter API
-      fetch('https://openrouter.ai/api/v1/chat/completions', {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,20 +145,28 @@ export async function callToolHandler(
           max_tokens: 3500
         })
       })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`OpenRouter API error: ${res.status} ${res.statusText}`)
+
+      if (!response.ok) {
+        let detail = ''
+        try {
+          const body = await response.json()
+          detail = body?.error?.message || JSON.stringify(body)
+        } catch {
+          detail = await response.text()
         }
-        return res.json()
-      })
-      .then(data => {
-        const report = data.choices[0]?.message?.content || 'Failed to generate report'
-        resolve({ result: report })
-      })
-      .catch(err => {
-        reject(new Error(`Failed to call OpenRouter API: ${err.message}`))
-      })
-    })
+        const hint = response.status === 401
+          ? 'OpenRouter API unauthorized. Check OPENROUTER_API_KEY.'
+          : `OpenRouter API error: ${response.status} ${response.statusText}`
+        throw new Error(detail ? `${hint} ${detail}` : hint)
+      }
+
+      const data = await response.json()
+      const report = data.choices[0]?.message?.content || 'Failed to generate report'
+      return { result: report }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown OpenRouter error'
+      throw new Error(`Failed to call OpenRouter API: ${message}`)
+    }
   }
 
   if (name === 'regenerate_section') {
@@ -171,8 +178,8 @@ export async function callToolHandler(
       throw new Error('OPENROUTER_API_KEY not found in environment variables')
     }
 
-    return new Promise((resolve, reject) => {
-      fetch('https://openrouter.ai/api/v1/chat/completions', {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,12 +190,12 @@ export async function callToolHandler(
         body: JSON.stringify({
           model: 'openai/gpt-3.5-turbo',
           messages: [
-            { 
-              role: 'system', 
-              content: 'You are a document editor. Modify the provided section based on user feedback. Return ONLY the modified section in markdown format, nothing else.' 
+            {
+              role: 'system',
+              content: 'You are a document editor. Modify the provided section based on user feedback. Return ONLY the modified section in markdown format, nothing else.'
             },
-            { 
-              role: 'user', 
+            {
+              role: 'user',
               content: `
 ORIGINAL SECTION:
 ${originalSection}
@@ -200,27 +207,35 @@ CONTEXT (for reference):
 ${fullContent.substring(0, 500)}...
 
 Please modify the section to address the user's feedback. Keep the same markdown format and structure. Return ONLY the updated section.
-` 
+`
             }
           ],
           temperature: 0.7,
           max_tokens: 1500
         })
       })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`OpenRouter API error: ${res.status} ${res.statusText}`)
+
+      if (!response.ok) {
+        let detail = ''
+        try {
+          const body = await response.json()
+          detail = body?.error?.message || JSON.stringify(body)
+        } catch {
+          detail = await response.text()
         }
-        return res.json()
-      })
-      .then(data => {
-        const regeneratedSection = data.choices[0]?.message?.content || 'Failed to regenerate section'
-        resolve({ result: regeneratedSection })
-      })
-      .catch(err => {
-        reject(new Error(`Failed to call OpenRouter API: ${err.message}`))
-      })
-    })
+        const hint = response.status === 401
+          ? 'OpenRouter API unauthorized. Check OPENROUTER_API_KEY.'
+          : `OpenRouter API error: ${response.status} ${response.statusText}`
+        throw new Error(detail ? `${hint} ${detail}` : hint)
+      }
+
+      const data = await response.json()
+      const regeneratedSection = data.choices[0]?.message?.content || 'Failed to regenerate section'
+      return { result: regeneratedSection }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown OpenRouter error'
+      throw new Error(`Failed to call OpenRouter API: ${message}`)
+    }
   }
 
   throw new Error('Tool not found')
