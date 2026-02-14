@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd saa-s-app-skeleton && pnpm install",
+  "buildCommand": "cd saa-s-app-skeleton && pnpm run build",
+  "outputDirectory": "saa-s-app-skeleton/.next"
+}
