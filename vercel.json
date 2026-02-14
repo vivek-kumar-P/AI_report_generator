@@ -6,7 +6,7 @@
       "use": "@vercel/next"
     }
   ],
-  "installCommand": "cd saa-s-app-skeleton && pnpm install --no-frozen-lockfile",
-  "buildCommand": "cd saa-s-app-skeleton && pnpm run build",
+  "installCommand": "cd saa-s-app-skeleton && npm install",
+  "buildCommand": "cd saa-s-app-skeleton && npm run build",
   "outputDirectory": "saa-s-app-skeleton/.next"
 }
