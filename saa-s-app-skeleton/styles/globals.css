@@ -1,0 +1,202 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #1e293b;
+  --primary-foreground: #fafafa;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #1e293b;
+  --muted: #f5f5f5;
+  --muted-foreground: #64748b;
+  --accent: #f5f5f5;
+  --accent-foreground: #1e293b;
+  --destructive: #dc2626;
+  --destructive-foreground: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #1e293b;
+  --chart-1: #3b82f6;
+  --chart-2: #10b981;
+  --chart-3: #8b5cf6;
+  --chart-4: #f59e0b;
+  --chart-5: #ef4444;
+  --radius: 0.625rem;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #1e293b;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #1e293b;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #fafafa;
+  --card: #0f172a;
+  --card-foreground: #fafafa;
+  --popover: #0f172a;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #1e293b;
+  --secondary: #1e293b;
+  --secondary-foreground: #fafafa;
+  --muted: #1e293b;
+  --muted-foreground: #71717a;
+  --accent: #1e293b;
+  --accent-foreground: #fafafa;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fca5a5;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #64748b;
+  --chart-1: #60a5fa;
+  --chart-2: #34d399;
+  --chart-3: #a78bfa;
+  --chart-4: #fbbf24;
+  --chart-5: #f87171;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #60a5fa;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #64748b;
+}
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.tiptap-editor {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+.tiptap-editor h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.tiptap-editor h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 16px;
+  margin-bottom: 10px;
+}
+
+.tiptap-editor h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.tiptap-editor p {
+  margin-bottom: 8px;
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol {
+  margin-bottom: 8px;
+  padding-left: 18px;
+}
+
+.tiptap-editor img {
+  max-width: 100%;
+  height: auto;
+  margin: 8px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.watery-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(245, 245, 245, 0.65));
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  transition: background 500ms ease, box-shadow 500ms ease, transform 500ms ease;
+}
+
+.watery-panel:hover {
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.12), 0 0 24px rgba(59, 130, 246, 0.08);
+}
+
+.watery-input {
+  background: rgba(255, 255, 255, 0.9);
+  transition: box-shadow 350ms ease, transform 350ms ease, background 350ms ease;
+}
+
+.glow-hover:hover,
+.watery-input:hover {
+  box-shadow: 0 0 0 1px rgba(30, 41, 59, 0.18), 0 12px 28px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.watery-cta {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: #ffffff;
+  transition: transform 450ms ease, box-shadow 450ms ease, opacity 350ms ease;
+}
+
+.watery-cta-secondary {
+  background: linear-gradient(135deg, #0f172a, #1f2937);
+  color: #ffffff;
+  transition: transform 450ms ease, box-shadow 450ms ease, opacity 350ms ease;
+}
