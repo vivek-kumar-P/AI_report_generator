@@ -1,12 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "saa-s-app-skeleton/package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "installCommand": "cd saa-s-app-skeleton && npm install",
-  "buildCommand": "cd saa-s-app-skeleton && npm run build",
-  "outputDirectory": "saa-s-app-skeleton/.next"
+  "builds": [{ "src": "frontend/package.json", "use": "@vercel/next" }],
+  "routes": [{ "src": "/(.*)", "dest": "/frontend/$1" }]
 }
