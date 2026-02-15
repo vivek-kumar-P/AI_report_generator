@@ -151,6 +151,27 @@ export default function GeneratePage() {
         addCompletedStage(GenerationStage.RENDERING)
         await new Promise(r => setTimeout(r, 200))
 
+        // Save report to database
+        try {
+          const title = formData.repoUrl.split('/').pop() || 'Project Report'
+          const saveResponse = await fetch('/api/reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title,
+              repoUrl: formData.repoUrl,
+              reportMarkdown: reportContent,
+            }),
+          })
+
+          if (!saveResponse.ok) {
+            console.error('Failed to save report to database')
+          }
+        } catch (saveError) {
+          console.error('Error saving report:', saveError)
+          // Don't fail the whole generation if save fails
+        }
+
         // Stage: COMPLETE
         updateCurrentStage(GenerationStage.COMPLETE, 'Report generated successfully! Redirecting to preview...')
         addCompletedStage(GenerationStage.COMPLETE)
@@ -184,7 +205,7 @@ export default function GeneratePage() {
   const hasError = generationStatus.currentStage === GenerationStage.ERROR
 
   return (
-    <div className="min-h-screen bg-background landing-shell">
+    <div className="min-h-screen bg-background/95 landing-shell">
       <Navbar />
 
       <main className="pt-24 pb-12 px-6">

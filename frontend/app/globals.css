@@ -122,6 +122,10 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  body[data-no-particles='true'] .particle-canvas {
+    display: none;
+  }
 }
 
 @layer utilities {
@@ -141,6 +145,15 @@
     }
     50% {
       text-shadow: 0 0 20px rgba(88, 86, 214, 0.6), 0 0 40px rgba(88, 86, 214, 0.3);
+    }
+  }
+
+  @keyframes glow-soft {
+    0%, 100% {
+      box-shadow: 0 10px 28px rgba(2, 6, 23, 0.35), 0 0 18px rgba(14, 165, 233, 0.12);
+    }
+    50% {
+      box-shadow: 0 14px 34px rgba(2, 6, 23, 0.4), 0 0 26px rgba(249, 115, 22, 0.2);
     }
   }
 
@@ -300,34 +313,30 @@
     transition: all 700ms ease;
   }
 
+  .soft-glow {
+    animation: glow-soft 8s ease-in-out infinite;
+    transition: box-shadow 900ms ease, transform 900ms ease, border-color 900ms ease, background 900ms ease;
+  }
+
+  .nav-glass-item {
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    box-shadow: 0 12px 26px rgba(2, 6, 23, 0.45), inset 0 0 16px rgba(148, 163, 184, 0.08);
+    backdrop-filter: blur(16px);
+    transition: transform 700ms ease, box-shadow 700ms ease, border-color 700ms ease, background 700ms ease;
+  }
+
+  .nav-glass-item:hover {
+    transform: translateY(-1px);
+    border-color: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 16px 30px rgba(2, 6, 23, 0.55), 0 0 18px rgba(14, 165, 233, 0.18);
+  }
+
   .nav-spectrum {
     background: linear-gradient(120deg, rgba(16, 185, 129, 0.18), rgba(249, 115, 22, 0.22), rgba(14, 165, 233, 0.2));
     border: 1px solid rgba(148, 163, 184, 0.3);
     box-shadow: 0 18px 42px rgba(2, 6, 23, 0.6), 0 0 28px rgba(249, 115, 22, 0.2);
     backdrop-filter: blur(18px);
-  }
-
-  .nav-link {
-    position: relative;
-    transition: color 500ms ease;
-  }
-
-  .nav-link::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -6px;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, #22c55e, #f97316, #0ea5e9);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 500ms ease;
-  }
-
-  .nav-link:hover::after,
-  .nav-link.active::after {
-    transform: scaleX(1);
   }
 
   .footer-spectrum {

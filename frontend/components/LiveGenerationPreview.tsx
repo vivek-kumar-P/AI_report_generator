@@ -45,10 +45,10 @@ export default function LiveGenerationPreview() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-background">
+    <div className="w-full h-full flex flex-col bg-background soft-glow slow-transition">
       {/* Status Bar */}
       <motion.div
-        className="px-6 py-4 border-b border-muted bg-muted/30 backdrop-blur"
+        className="px-6 py-4 border-b border-muted bg-muted/30 backdrop-blur soft-glow slow-transition"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >

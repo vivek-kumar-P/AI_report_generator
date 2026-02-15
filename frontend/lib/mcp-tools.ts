@@ -1,6 +1,8 @@
 // MCP Tools definitions and handlers (shared between frontend & API)
 // This replaces the root index.js backend
 
+import { GitHubFetcher } from './github-fetcher'
+
 export const MCP_TOOLS = {
   hello: {
     name: 'hello',
@@ -61,23 +63,11 @@ export async function callToolHandler(
 
   if (name === 'scan_markdown_files') {
     const { repoUrl } = safeArgs
-    const mockFiles = [
-      {
-        path: 'README.md',
-        content:
-          '# My Project\n\nThis is the main readme for the project. It contains an overview and getting started guide.',
-      },
-      {
-        path: 'docs/ARCHITECTURE.md',
-        content: '# Architecture\n\n## Overview\nThe system is built with a modular design...',
-      },
-      {
-        path: 'docs/API.md',
-        content:
-          '# API Documentation\n\n## Endpoints\n- GET /api/data\n- POST /api/create',
-      },
-    ]
-    return { result: mockFiles }
+    const fetchResult = await GitHubFetcher.fetchMarkdownFiles(repoUrl)
+    if (!fetchResult.success) {
+      throw new Error(fetchResult.error || 'Failed to fetch markdown files')
+    }
+    return { result: fetchResult.data || [] }
   }
 
   if (name === 'generate_project_report') {

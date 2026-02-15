@@ -1,11 +1,9 @@
 const MCP_ENDPOINT =
-  process.env.NEXT_PUBLIC_MCP_ENDPOINT || '/api/tools'
+  process.env.NEXT_PUBLIC_MCP_ENDPOINT || 'https://tacitly-predeficient-aidyn.ngrok-free.dev/tools'
 
 function getMcpBaseUrl(): string {
-  if (typeof window !== 'undefined') {
-    return ''
-  }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+  // Always use empty base since we have full URL in MCP_ENDPOINT
+  return ''
 }
 
 export async function callMCP(
@@ -18,6 +16,7 @@ export async function callMCP(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
     },
     body: JSON.stringify({ name: toolName, args }),
   })

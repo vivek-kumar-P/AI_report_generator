@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import jsPDF from 'jspdf'
@@ -10,7 +10,7 @@ import A4Page, { type A4PageHandle } from '@/components/A4Page'
 import { useReportStore } from '@/lib/store'
 import { identifyFeedbackTarget, markdownToBasicHtml } from '@/lib/report-utils'
 import { Button } from '@/components/ui/button'
-import { FileDown, ChevronLeft, ChevronRight, Loader, RefreshCw, Palette, Type, Image as ImageIcon, SlidersHorizontal, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline, Strikethrough, List, ListOrdered, Undo, Redo, Link as LinkIcon, SeparatorHorizontal } from 'lucide-react'
+import { FileDown, ChevronUp, ChevronDown, Loader, RefreshCw, Palette, Type, Image as ImageIcon, SlidersHorizontal, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline, Strikethrough, List, ListOrdered, Undo, Redo, Link as LinkIcon, SeparatorHorizontal } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
 
@@ -33,7 +33,12 @@ export default function PreviewPage() {
   const [pageTint, setPageTint] = useState('#ffffff')
   const [pendingImage, setPendingImage] = useState<File | null>(null)
   const [linkUrl, setLinkUrl] = useState('')
+  const [zoom, setZoom] = useState(0.9)
+  const [fitZoom, setFitZoom] = useState(0.9)
+  const [zoomMode, setZoomMode] = useState<'fit' | 'custom'>('fit')
   const editorRef = useRef<A4PageHandle | null>(null)
+  const previewViewportRef = useRef<HTMLDivElement | null>(null)
+  const pageRefs = useRef<Array<HTMLDivElement | null>>([])
 
   const displayPages = pages && pages.length > 0 ? pages : ['No report generated yet']
   const displayPagesHtml = pagesHtml && pagesHtml.length > 0
@@ -49,6 +54,50 @@ export default function PreviewPage() {
     () => ['12px', '14px', '16px', '18px', '20px', '22px', '24px'],
     []
   )
+
+  const zoomScale = zoomMode === 'fit' ? fitZoom : zoom
+  const pageGap = Math.max(12, Math.round(32 * zoomScale))
+  const scrollToPage = (index: number) => {
+    const safeIndex = Math.max(0, Math.min(totalPages - 1, index))
+    setCurrentPageIndex(safeIndex)
+
+    requestAnimationFrame(() => {
+      const target = pageRefs.current[safeIndex]
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    })
+  }
+
+  useEffect(() => {
+    document.body.dataset.noParticles = 'true'
+    return () => {
+      delete document.body.dataset.noParticles
+    }
+  }, [])
+
+  useEffect(() => {
+    const viewport = previewViewportRef.current
+    if (!viewport) return
+
+    const updateFit = () => {
+      const rect = viewport.getBoundingClientRect()
+      const fitWidth = (rect.width - 48) / 794
+      const fitHeight = (rect.height - 48) / 1123
+      const nextFit = Math.max(0.35, Math.min(1, fitWidth, fitHeight))
+      const rounded = Number(nextFit.toFixed(2))
+      setFitZoom(rounded)
+      if (zoomMode === 'fit') {
+        setZoom(rounded)
+      }
+    }
+
+    updateFit()
+    const observer = new ResizeObserver(updateFit)
+    observer.observe(viewport)
+
+    return () => observer.disconnect()
+  }, [zoomMode])
 
   const handleRegenerate = async () => {
     if (!feedback.trim() || !pages || pages.length === 0) return
@@ -236,10 +285,10 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background landing-shell">
+    <div className="min-h-screen bg-background/95 landing-shell">
       <Navbar />
 
-      <main className="pt-24 pb-6 h-screen flex flex-col">
+      <main className="pt-28 pb-6 h-screen flex flex-col">
         <div className="flex-1 flex overflow-hidden gap-6 px-6">
           {/* LEFT: A4 Pages Preview - Scrollable */}
           <motion.div
@@ -247,57 +296,117 @@ export default function PreviewPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <ScrollArea className="h-full">
-              <div className="flex flex-col items-center justify-center gap-6 p-6">
-                {/* Page Display */}
-                <div className="w-full max-w-3xl">
-                  <A4Page
-                    contentHtml={currentPageHtml}
-                    pageNumber={currentPageIndex + 1}
-                    totalPages={totalPages}
-                    showBorder={showBorder}
-                    showFooter={showFooter}
-                    pagePadding={pagePadding}
-                    lineHeight={lineHeight}
-                    fontSize={fontSize}
-                    fontFamily={fontFamily}
-                    textColor={textColor}
-                    highlightColor={highlightColor}
-                    pageTint={pageTint}
-                    pendingImage={pendingImage}
-                    onImageHandled={() => setPendingImage(null)}
-                    onContentChange={(html) => setPageHtml(currentPageIndex, html)}
-                    ref={editorRef}
-                  />
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 py-3 border-b border-muted/60 bg-muted/30 backdrop-blur">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setZoomMode('fit')}
+                  className="cta-secondary"
+                >
+                  Fit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => scrollToPage(currentPageIndex - 1)}
+                  disabled={currentPageIndex === 0}
+                  className="cta-secondary"
+                >
+                  <ChevronUp className="w-4 h-4" />
+                  Up
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setZoomMode('custom')
+                    setZoom((prev) => Math.max(0.4, Number((prev - 0.1).toFixed(2))))
+                  }}
+                  className="cta-secondary"
+                >
+                  -
+                </Button>
+                <div className="px-3 py-1 rounded-lg glow-panel text-xs font-semibold text-foreground">
+                  {Math.round(zoomScale * 100)}%
                 </div>
-
-                {/* Page Navigation Controls */}
-                <div className="flex items-center justify-center gap-3 w-full max-w-3xl pb-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPageIndex(Math.max(0, currentPageIndex - 1))}
-                    disabled={currentPageIndex === 0}
-                    className="gap-2 cta-secondary"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous
-                  </Button>
-
-                  <div className="px-4 py-2 rounded-lg glow-panel text-sm font-semibold text-foreground">
-                    {currentPageIndex + 1} / {totalPages}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPageIndex(Math.min(totalPages - 1, currentPageIndex + 1))}
-                    disabled={currentPageIndex === totalPages - 1}
-                    className="gap-2 cta-secondary"
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setZoomMode('custom')
+                    setZoom((prev) => Math.min(1.6, Number((prev + 0.1).toFixed(2))))
+                  }}
+                  className="cta-secondary"
+                >
+                  +
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => scrollToPage(currentPageIndex + 1)}
+                  disabled={currentPageIndex === totalPages - 1}
+                  className="cta-secondary"
+                >
+                  Down
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setZoomMode('custom')
+                    setZoom(1)
+                  }}
+                  className="cta-secondary"
+                >
+                  100%
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Page {currentPageIndex + 1} / {totalPages} · A4 210 x 297 mm
+              </div>
+            </div>
+            <ScrollArea className="h-full" ref={previewViewportRef}>
+              <div className="flex flex-col items-center justify-center p-6" style={{ gap: pageGap }}>
+                {/* Page Display */}
+                <div className="w-full max-w-3xl flex flex-col items-center" style={{ gap: pageGap }}>
+                  {displayPagesHtml.map((pageHtml, pageIndex) => (
+                    <div
+                      key={pageIndex}
+                      ref={(node) => {
+                        pageRefs.current[pageIndex] = node
+                      }}
+                      className={`flex w-full justify-center transition-all duration-300 ${
+                        pageIndex === currentPageIndex ? 'ring-1 ring-emerald-400/50 rounded-lg' : 'opacity-85'
+                      }`}
+                      onClick={() => scrollToPage(pageIndex)}
+                    >
+                      <div
+                        className="transition-transform duration-300"
+                        style={{ transform: `scale(${zoomScale})`, transformOrigin: 'top center' }}
+                      >
+                        <A4Page
+                          contentHtml={pageHtml}
+                          pageNumber={pageIndex + 1}
+                          totalPages={totalPages}
+                          showBorder={showBorder}
+                          showFooter={showFooter}
+                          pagePadding={pagePadding}
+                          lineHeight={lineHeight}
+                          fontSize={fontSize}
+                          fontFamily={fontFamily}
+                          textColor={textColor}
+                          highlightColor={highlightColor}
+                          pageTint={pageTint}
+                          pendingImage={pageIndex === currentPageIndex ? pendingImage : null}
+                          onImageHandled={() => setPendingImage(null)}
+                          onContentChange={(html) => setPageHtml(pageIndex, html)}
+                          ref={pageIndex === currentPageIndex ? editorRef : undefined}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </ScrollArea>

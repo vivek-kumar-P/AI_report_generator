@@ -154,7 +154,7 @@ export default function FormDialog({ isOpen, onClose }: FormDialogProps) {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
-            className="glass-morphism w-full max-w-2xl h-[90vh] rounded-2xl border border-white/10 bg-slate-900/80 shadow-2xl backdrop-blur-xl dark:bg-slate-950/80 flex flex-col overflow-hidden"
+            className="glass-morphism soft-glow slow-transition w-full max-w-2xl h-[90vh] rounded-2xl border border-white/10 bg-slate-900/80 shadow-2xl backdrop-blur-xl dark:bg-slate-950/80 flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Fixed Header */}

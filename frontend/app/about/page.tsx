@@ -7,7 +7,7 @@ import { ArrowRight, Check } from 'lucide-react'
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-background landing-shell">
+    <div className="min-h-screen bg-background/95 landing-shell">
       <Navbar />
 
       <main className="pt-24 pb-14 px-4 sm:px-6 lg:px-8">

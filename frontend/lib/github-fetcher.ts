@@ -1,6 +1,6 @@
 export interface FetchResult {
   success: boolean
-  data?: string[]
+  data?: Array<{ path: string; content: string }>
   error?: string
 }
 
@@ -59,7 +59,10 @@ export class GitHubFetcher {
       // Filter markdown files
       const mdFiles = contents
         .filter((file: any) => file.name.endsWith('.md'))
-        .map((file: any) => file.download_url)
+        .map((file: any) => ({
+          path: file.path || file.name,
+          url: file.download_url,
+        }))
 
       if (mdFiles.length === 0) {
         return {
@@ -69,14 +72,14 @@ export class GitHubFetcher {
       }
 
       // Fetch markdown file contents
-      const mdContents: string[] = []
-      for (const fileUrl of mdFiles) {
+      const mdContents: Array<{ path: string; content: string }> = []
+      for (const file of mdFiles) {
         try {
-          const fileResponse = await this.fetchWithRetry(fileUrl)
+          const fileResponse = await this.fetchWithRetry(file.url)
           const content = await fileResponse.text()
-          mdContents.push(content)
+          mdContents.push({ path: file.path, content })
         } catch (error) {
-          console.warn(`Failed to fetch ${fileUrl}:`, error)
+          console.warn(`Failed to fetch ${file.path}:`, error)
         }
       }
 
@@ -114,7 +117,9 @@ export class GitHubFetcher {
 
     try {
       // Combine markdown files into a single report
-      const combinedContent = (mdResult.data || []).join('\n\n---\n\n')
+      const combinedContent = (mdResult.data || [])
+        .map((item) => item.content)
+        .join('\n\n---\n\n')
       
       // Build report with template if provided
       let report = template ? `${template}\n\n` : ''
@@ -126,7 +131,7 @@ export class GitHubFetcher {
 
       return {
         success: true,
-        data: [report],
+        data: [{ path: 'combined-report.md', content: report }],
       }
     } catch (error) {
       const errorMessage =

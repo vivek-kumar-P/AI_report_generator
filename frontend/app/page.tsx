@@ -27,14 +27,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background landing-shell">
+    <div className="min-h-screen bg-background/95 landing-shell">
       <Navbar />
       <FormDialog isOpen={isFormOpen} onClose={() => setFormOpen(false)} />
 
       <main className="min-h-screen">
         {/* Hero Section */}
         <section id="home" className="relative pt-24 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-          <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0">
             <div className="hero-orb hero-orb-cyan w-[420px] h-[420px] -top-32 -left-28" />
             <div className="hero-orb hero-orb-orange w-[360px] h-[360px] top-10 right-[-120px]" />
             <div className="hero-orb hero-orb-lime w-[280px] h-[280px] bottom-[-140px] left-[35%]" />

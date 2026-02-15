@@ -6,6 +6,77 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithRetry = async (url, retries = MAX_RETRIES) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Accept: "application/vnd.github.v3.raw",
+        },
+      });
+
+      if (response.ok) return response;
+      if (response.status === 404) throw new Error("Repository not found");
+      if (response.status === 403) throw new Error("Rate limit exceeded. Try again later.");
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      await sleep(RETRY_DELAY * (i + 1));
+    }
+  }
+  throw new Error("Failed to fetch after retries");
+};
+
+const fetchMarkdownFiles = async (repoUrl) => {
+  const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)(?:\.git)?$/);
+  if (!match) {
+    throw new Error("Invalid GitHub URL format. Use: https://github.com/owner/repo");
+  }
+
+  const [, owner, repo] = match;
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
+
+  const response = await fetchWithRetry(apiUrl);
+  const contents = await response.json();
+
+  if (!Array.isArray(contents)) {
+    throw new Error("Failed to read repository contents");
+  }
+
+  const mdFiles = contents
+    .filter((file) => file.name && file.name.endsWith(".md"))
+    .map((file) => ({
+      path: file.path || file.name,
+      url: file.download_url,
+    }))
+    .filter((file) => file.url);
+
+  if (mdFiles.length === 0) {
+    throw new Error("No markdown files found in repository root");
+  }
+
+  const mdContents = [];
+  for (const file of mdFiles) {
+    try {
+      const fileResponse = await fetchWithRetry(file.url);
+      const content = await fileResponse.text();
+      mdContents.push({ path: file.path, content });
+    } catch (error) {
+      console.warn(`Failed to fetch ${file.path}:`, error);
+    }
+  }
+
+  if (mdContents.length === 0) {
+    throw new Error("Failed to fetch markdown file contents");
+  }
+
+  return mdContents;
+};
+
 const server = new Server(
   {
     name: "my-mcp",
@@ -71,28 +142,15 @@ const callTool = async ({ name, args }) => {
 
   if (name === "scan_markdown_files") {
     const { repoUrl } = safeArgs;
-    const mockFiles = [
-      {
-        path: "README.md",
-        content: "# My Project\n\nThis is the main readme for the project. It contains an overview and getting started guide.",
-      },
-      {
-        path: "docs/ARCHITECTURE.md",
-        content: "# Architecture\n\n## Overview\nThe system is built with a modular design...",
-      },
-      {
-        path: "docs/API.md",
-        content: "# API Documentation\n\n## Endpoints\n- GET /api/data\n- POST /api/create",
-      },
-    ];
+    const files = await fetchMarkdownFiles(repoUrl);
     return {
       content: [
         {
           type: "text",
-          text: JSON.stringify(mockFiles),
+          text: JSON.stringify(files),
         },
       ],
-      result: mockFiles,
+      result: files,
     };
   }
 
