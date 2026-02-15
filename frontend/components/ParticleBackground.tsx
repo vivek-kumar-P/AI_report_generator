@@ -33,14 +33,14 @@ export default function ParticleBackground() {
     window.addEventListener('resize', resizeCanvas)
 
     // Initialize particles
-    const particleCount = 5 // Reduced by 50%
+    const particleCount = 30 // Increased for visibility
     particlesRef.current = Array.from({ length: particleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
       vx: (Math.random() - 0.5) * 0.5,
       vy: (Math.random() - 0.5) * 0.5,
-      size: Math.random() * 1.8 + 1.2,
-      opacity: Math.random() * 0.0225 + 0.03625,
+      size: Math.random() * 2.4 + 1.4,
+      opacity: Math.random() * 0.18 + 0.2,
     }))
 
     // Track mouse position
@@ -116,8 +116,8 @@ export default function ParticleBackground() {
               particle.x, particle.y,
               otherParticle.x, otherParticle.y
             )
-            connectionGradient.addColorStop(0, `rgba(16, 185, 129, ${0.175 * (1 - distance / 120)})`)
-            connectionGradient.addColorStop(1, `rgba(14, 165, 233, ${0.175 * (1 - distance / 120)})`)
+            connectionGradient.addColorStop(0, `rgba(16, 185, 129, ${0.35 * (1 - distance / 120)})`)
+            connectionGradient.addColorStop(1, `rgba(14, 165, 233, ${0.35 * (1 - distance / 120)})`)
             ctx.strokeStyle = connectionGradient
             ctx.lineWidth = 1
             ctx.stroke()
@@ -144,7 +144,7 @@ export default function ParticleBackground() {
     <canvas
       ref={canvasRef}
       className="particle-canvas fixed inset-0 pointer-events-none"
-      style={{ zIndex: 1, opacity: 0.225 }}
+      style={{ zIndex: 1, opacity: 0.6 }}
     />
   )
 }
