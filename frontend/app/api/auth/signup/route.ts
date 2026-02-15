@@ -49,6 +49,10 @@ export async function POST(req: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     
+    // Log detailed error for debugging
+    console.error('Signup error:', error)
+    console.error('Error message:', message)
+    
     if (message === 'User already exists') {
       return NextResponse.json(
         { error: 'User already exists' },
@@ -56,8 +60,16 @@ export async function POST(req: Request) {
       )
     }
 
+    // Check for MongoDB connection errors
+    if (message.includes('MONGODB_URI') || message.includes('connect')) {
+      return NextResponse.json(
+        { error: 'Database connection failed. Please contact support.' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
-      { error: 'Failed to create user' },
+      { error: `Failed to create user: ${message}` },
       { status: 500 }
     )
   }
