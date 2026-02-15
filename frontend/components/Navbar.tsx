@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Moon, Sun, Zap, LogOut, User, LayoutDashboard, ChevronDown } from 'lucide-react'
+import { Zap, LogOut, User, LayoutDashboard, ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useReportStore } from '@/lib/store'
 import { useSession, signOut } from 'next-auth/react'
@@ -11,25 +11,15 @@ import { useSession, signOut } from 'next-auth/react'
 export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const [isDark, setIsDark] = useState(false)
-  const [isCollapsed, setIsCollapsed] = useState(false)
   const [isAtTop, setIsAtTop] = useState(true)
   const { setFormOpen, isFormOpen } = useReportStore()
   const { data: session, status } = useSession()
   const isGenerationRoute = pathname.startsWith('/generate')
 
   useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains('dark')
-    setIsDark(isDarkMode)
-  }, [])
-
-  useEffect(() => {
     const handleScroll = () => {
       const atTop = window.scrollY < 8
       setIsAtTop(atTop)
-      if (!atTop) {
-        setIsCollapsed(true)
-      }
     }
 
     handleScroll()
@@ -37,77 +27,24 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const toggleDarkMode = () => {
-    const html = document.documentElement
-    if (html.classList.contains('dark')) {
-      html.classList.remove('dark')
-      setIsDark(false)
-      localStorage.setItem('theme', 'light')
-    } else {
-      html.classList.add('dark')
-      setIsDark(true)
-      localStorage.setItem('theme', 'dark')
-    }
-  }
-
   const isActive = (path: string) => pathname === path
-
-  useEffect(() => {
-    if (isFormOpen) {
-      setIsCollapsed(true)
-    }
-  }, [isFormOpen])
-
-  useEffect(() => {
-    if (isGenerationRoute) {
-      setIsCollapsed(true)
-    }
-  }, [isGenerationRoute])
-
-  useEffect(() => {
-    if (isAtTop && !isFormOpen && !isGenerationRoute) {
-      setIsCollapsed(false)
-    }
-  }, [isAtTop, isFormOpen, isGenerationRoute])
 
   const handleGenerateReport = () => {
     setFormOpen(true)
-    setIsCollapsed(true)
     if (pathname !== '/') {
       router.push('/')
     }
-  }
-
-  const handleToggleNavbar = () => {
-    if (isGenerationRoute) return
-    setIsCollapsed((prev) => !prev)
   }
 
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-40 flex pt-3 px-4 transition-all duration-700 ${
         isAtTop ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
-      } ${isCollapsed ? 'justify-start' : 'justify-center'}`}
+      } justify-center`}
     >
       <div
-        className={`nav-spectrum soft-glow flex items-center justify-between gap-5 rounded-2xl px-4 py-2 slow-transition backdrop-blur-md transition-all duration-700 ${
-          isCollapsed ? 'w-auto' : 'w-full max-w-6xl'
-        }`}
+        className="nav-spectrum soft-glow flex items-center justify-between gap-5 rounded-2xl px-4 py-2 slow-transition backdrop-blur-md transition-all duration-700 w-full max-w-6xl"
       >
-        {isCollapsed ? (
-          <button
-            type="button"
-            onClick={handleToggleNavbar}
-            className="flex items-center gap-2 nav-glass-item slow-transition px-3 py-2 rounded-xl"
-            aria-label="Toggle navigation"
-          >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 via-sky-400 to-orange-400 flex items-center justify-center shadow-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-sm font-semibold text-foreground hidden sm:inline">Menu</span>
-          </button>
-        ) : (
-          <>
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 via-sky-400 to-orange-400 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
@@ -204,26 +141,6 @@ export default function Navbar() {
               Generate Report
             </Button>
           )}
-          <button
-            type="button"
-            onClick={handleToggleNavbar}
-            className="p-2 rounded-lg nav-glass-item slow-transition hover:bg-muted/50"
-            aria-label="Minimize navigation"
-          >
-            <Zap className="w-4 h-4 text-foreground" />
-          </button>
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-lg nav-glass-item slow-transition hover:bg-muted/50"
-            aria-label="Toggle dark mode"
-          >
-            {isDark ? (
-              <Sun className="w-5 h-5 text-amber-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-slate-600" />
-            )}
-          </button>
-
           {status === 'loading' ? (
             <div className="w-24 h-10 rounded-lg bg-muted/50 animate-pulse" />
           ) : session ? (
@@ -268,8 +185,6 @@ export default function Navbar() {
             </div>
           )}
         </div>
-          </>
-        )}
       </div>
     </nav>
   )
