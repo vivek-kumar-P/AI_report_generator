@@ -1,5 +1,7 @@
 # SaaS Report Generator - Project Structure
 
+Last updated: February 2026
+
 ## 📁 Directory Structure (Vercel-Ready)
 
 ```
