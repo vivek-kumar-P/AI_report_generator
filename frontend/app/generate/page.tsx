@@ -39,28 +39,48 @@ export default function GeneratePage() {
         addCompletedStage(GenerationStage.PREPARING)
 
         // Stage: FETCHING_REPO
-        updateCurrentStage(GenerationStage.FETCHING_REPO, 'Downloading repository data from GitHub...')
+        updateCurrentStage(GenerationStage.FETCHING_REPO, formData.uploadedFile ? 'Extracting files from archive...' : 'Downloading repository data from GitHub...')
         addCompletedStage(GenerationStage.FETCHING_REPO)
         await new Promise(r => setTimeout(r, 800))
 
         // Stage: SCANNING_FILES
-        updateCurrentStage(GenerationStage.SCANNING_FILES, 'Identifying markdown files in repository...')
+        updateCurrentStage(GenerationStage.SCANNING_FILES, formData.uploadedFile ? 'Reading text files from archive...' : 'Identifying markdown files in repository...')
         addCompletedStage(GenerationStage.SCANNING_FILES)
 
         let markdownFiles: Array<{ path: string; content: string }> = []
         try {
-          const scanResult = (await Promise.race([
-            callMCP('scan_markdown_files', {
-              repoUrl: formData.repoUrl,
-            }),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Scan timeout (30s)')), 30000)
-            ),
-          ])) as any
+          if (formData.uploadedFile) {
+            // Handle uploaded file
+            const formDataObj = new FormData()
+            formDataObj.append('file', formData.uploadedFile)
+
+            const extractResponse = await fetch('/api/extract-files', {
+              method: 'POST',
+              body: formDataObj,
+            })
+
+            if (!extractResponse.ok) {
+              const error = await extractResponse.json()
+              throw new Error(error.error || 'Failed to extract files')
+            }
+
+            const extractResult = await extractResponse.json()
+            markdownFiles = extractResult.files || []
+          } else {
+            // Handle GitHub URL
+            const scanResult = (await Promise.race([
+              callMCP('scan_markdown_files', {
+                repoUrl: formData.repoUrl,
+              }),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Scan timeout (30s)')), 30000)
+              ),
+            ])) as any
+            markdownFiles = scanResult.result || []
+          }
 
           // Stage: EXTRACTING_INFO
           updateCurrentStage(GenerationStage.EXTRACTING_INFO, 'Extracting important information from files...')
-          markdownFiles = scanResult.result || []
           console.log('Scanned files:', markdownFiles)
           addCompletedStage(GenerationStage.EXTRACTING_INFO)
           await new Promise(r => setTimeout(r, 500))
@@ -91,11 +111,11 @@ export default function GeneratePage() {
         updateCurrentStage(GenerationStage.CALLING_LLM, 'Sending request to OpenRouter API...')
         addCompletedStage(GenerationStage.CALLING_LLM)
 
-        const requestedMaxPages = Math.max(5, formData.maxPages || 0)
+        const requestedMaxPages = Math.max(1, formData.maxPages || 5)
 
         const reportResult = (await Promise.race([
           callMCP('generate_project_report', {
-            repoUrl: formData.repoUrl,
+            repoUrl: formData.uploadedFile ? `Uploaded: ${formData.uploadedFile.name}` : formData.repoUrl,
             maxPages: requestedMaxPages,
             extraPrompt: formData.extraPrompt,
             template: formData.template || '',

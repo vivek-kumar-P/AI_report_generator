@@ -6,8 +6,8 @@
  * Split report content into multiple pages based on character count and max pages
  */
 export function splitReportIntoPages(content: string, maxPages: number): string[] {
-  const minPages = 5
-  const effectiveMaxPages = Math.max(maxPages || 0, minPages)
+  const minPages = Math.max(1, maxPages || 5)
+  const effectiveMaxPages = Math.max(maxPages || 5, minPages)
   if (!content) return ['']
 
   // Estimate characters per page (A4 at readable size)

@@ -7,6 +7,8 @@ export interface FormData {
   maxPages: number
   extraPrompt: string
   advancedCustomization: boolean
+  uploadedFile?: File | null
+  extractedFiles?: Array<{path: string, content: string}>
 }
 
 export interface GenerationStatus {

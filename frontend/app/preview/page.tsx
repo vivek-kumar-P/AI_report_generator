@@ -647,13 +647,13 @@ export default function PreviewPage() {
                   </label>
                   <input
                     type="range"
-                    min="5"
+                    min="1"
                     max="50"
                     value={maxPages}
                     onChange={(e) => setMaxPages(parseInt(e.target.value))}
                     className="w-full cursor-pointer glow-hover slow-transition"
                   />
-                  <p className="text-xs text-muted-foreground">Range: 5–50 pages</p>
+                  <p className="text-xs text-muted-foreground">Range: 1–50 pages</p>
                 </div>
 
                 {/* Actions */}

@@ -72,8 +72,7 @@ export async function callToolHandler(
 
   if (name === 'generate_project_report') {
     const { repoUrl, maxPages, extraPrompt, template, markdownFiles } = safeArgs
-    const requiredMinPages = 5
-    const effectiveMaxPages = Math.max(requiredMinPages, Number(maxPages) || requiredMinPages)
+    const effectiveMaxPages = Math.max(1, Number(maxPages) || 5)
     const filesInfo = Array.isArray(markdownFiles)
       ? `Found ${markdownFiles.length} markdown files: ${markdownFiles.map((f: any) => f.path).join(', ')}`
       : 'No markdown files provided'

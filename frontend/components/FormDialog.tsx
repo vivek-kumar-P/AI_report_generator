@@ -110,9 +110,10 @@ export default function FormDialog({ isOpen, onClose }: FormDialogProps) {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {}
 
-    if (!formState.repoUrl.trim()) {
-      errors.repoUrl = 'Repository URL is required'
-    } else if (urlValidation.status !== 'valid') {
+    // Either GitHub URL or file upload is required
+    if (!formState.repoUrl.trim() && !uploadedFile) {
+      errors.repoUrl = 'Either GitHub repository URL or file upload is required'
+    } else if (formState.repoUrl.trim() && urlValidation.status !== 'valid') {
       errors.repoUrl = urlValidation.message || 'Please enter a valid GitHub repository URL'
     }
 
@@ -125,7 +126,11 @@ export default function FormDialog({ isOpen, onClose }: FormDialogProps) {
 
     if (!validateForm()) return
 
-    setFormData(formState)
+    // Pass form data with uploaded file
+    setFormData({
+      ...formState,
+      uploadedFile: uploadedFile,
+    })
     
     // Close dialog and navigate to generate
     onClose()
@@ -279,11 +284,11 @@ export default function FormDialog({ isOpen, onClose }: FormDialogProps) {
                   onValueChange={(value) =>
                     setFormState((prev) => ({ ...prev, maxPages: value[0] }))
                   }
-                  min={5}
+                  min={1}
                   max={50}
                   step={1}
                 />
-                <p className="text-xs text-muted-foreground mt-2">Range: 5–50 pages</p>
+                <p className="text-xs text-muted-foreground mt-2">Range: 1–50 pages</p>
               </div>
 
               {/* Extra Prompt */}
