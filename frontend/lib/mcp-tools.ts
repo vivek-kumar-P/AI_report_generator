@@ -1,5 +1,4 @@
 // MCP Tools definitions and handlers (shared between frontend & API)
-// This replaces the root index.js backend
 
 import { GitHubFetcher } from './github-fetcher'
 
@@ -14,9 +13,7 @@ export const MCP_TOOLS = {
     description: 'Scan and list markdown files from a repository',
     inputSchema: {
       type: 'object',
-      properties: {
-        repoUrl: { type: 'string' },
-      },
+      properties: { repoUrl: { type: 'string' } },
       required: ['repoUrl'],
     },
   },
@@ -50,7 +47,6 @@ export const MCP_TOOLS = {
   },
 }
 
-// Tool execution logic
 export async function callToolHandler(
   name: string,
   args: Record<string, any>
@@ -73,66 +69,90 @@ export async function callToolHandler(
   if (name === 'generate_project_report') {
     const { repoUrl, maxPages, extraPrompt, template, markdownFiles } = safeArgs
     const effectiveMaxPages = Math.max(1, Number(maxPages) || 5)
-    const filesInfo = Array.isArray(markdownFiles)
-      ? `Found ${markdownFiles.length} markdown files: ${markdownFiles.map((f: any) => f.path).join(', ')}`
+
+    const filesInfo = Array.isArray(markdownFiles) && markdownFiles.length > 0
+      ? markdownFiles.map((f: any) => `\n### ${f.path}\n${f.content || ''}`).join('\n\n')
       : 'No markdown files provided'
-    
-    // Call OpenRouter API for real report generation
-    const openrouterApiKey = process.env.OPENROUTER_API_KEY
-    if (!openrouterApiKey) {
-      throw new Error('OPENROUTER_API_KEY not found in environment variables')
-    }
 
-    // Construct prompt for OpenRouter
-    const systemPrompt = `You are a professional report writer. Produce a formal, objective report in third person with clear headings and consistent formatting. The report must be detailed enough to fill at least five A4 pages when rendered.`
-    const userPrompt = `
-  Generate a comprehensive project report with these details:
-  - Repository URL: ${repoUrl}
-  - Max Pages Requested: ${effectiveMaxPages}
-  - Template: ${template ? 'Yes' : 'No'}
-  - Additional Instructions: ${extraPrompt || 'None'}
-  - Available Markdown Files: ${filesInfo}
+    const groqApiKey = process.env.GROQ_API_KEY
+    if (!groqApiKey) throw new Error('GROQ_API_KEY not found in environment variables')
 
-  MANDATORY REPORT STRUCTURE (use these headings, in this order):
-  1. Title Page (Title, author name, date, purpose)
-  2. Executive Summary/Abstract (100-200 words)
-  3. Table of Contents
-  4. Introduction (background, purpose, scope)
-  5. Methodology (how data was gathered)
-  6. Findings/Results (detailed)
-  7. Discussion/Analysis (interpretation)
-  8. Conclusion (summary)
-  9. Recommendations (actions)
-  10. References/Bibliography
-  11. Appendices (supporting material)
+    const wordsPerPage = 350
+    const targetWords = effectiveMaxPages * wordsPerPage
 
-  REQUIREMENTS:
-  - Minimum length: at least 2,000-2,500 words total (approx. 5 A4 pages).
-  - Each section must include 2-3 substantial paragraphs.
-  - Use formal, objective tone and third person.
-  - Use consistent headings/subheadings.
-  - Mention visuals (tables/charts) where relevant.
-  - Format as a single markdown document suitable for A4 printing.
-  `
+    const systemPrompt = `You are a senior technical writer producing formal, detailed project reports. 
+You write in third person, use precise language, and always produce FULL content for every section — never write placeholder text like "[Author Name]" or "[Current Date]".
+Every section must have substantial content. Never write a heading without at least 3 full paragraphs of content below it.
+Always use actual dates, realistic author attributions, and concrete details based on the repository information provided.`
+
+    const userPrompt = `Generate a comprehensive, detailed project report for the following repository.
+
+Repository URL: ${repoUrl}
+Target Length: ${targetWords} words minimum (${effectiveMaxPages} pages × ${wordsPerPage} words/page)
+Additional Instructions: ${extraPrompt || 'None'}
+Template: ${template || 'Standard A4 report format'}
+
+REPOSITORY CONTENT:
+${filesInfo}
+
+MANDATORY STRUCTURE — write EACH section with FULL content (minimum 3 paragraphs each):
+
+# Title Page
+Write the actual project name, today's date (${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}), author attribution, and a 2-paragraph purpose statement.
+
+## Executive Summary
+Write 3-4 paragraphs summarising the entire report — what the project is, what was found, and what is recommended.
+
+## Table of Contents
+List all sections with their headings.
+
+## Introduction
+Write 4+ paragraphs covering: project background, problem being solved, why this project matters, scope of this report, and objectives.
+
+## Methodology
+Write 3-4 paragraphs describing: how the repository was analysed, what files and documentation were reviewed, what tools and techniques were used, and the analysis approach.
+
+## Findings and Results
+Write 4-5 paragraphs with concrete findings from the actual codebase: tech stack identified, architecture patterns, key features discovered, code quality observations, and any notable implementation details. Include a markdown table summarising key findings.
+
+## Discussion and Analysis
+Write 3-4 paragraphs interpreting the findings: what the findings mean, strengths of the implementation, weaknesses or gaps identified, and comparison to industry best practices.
+
+## Conclusion
+Write 3 paragraphs summarising: what was achieved, the overall assessment of the project, and final thoughts.
+
+## Recommendations
+Write 3-4 paragraphs with specific, actionable recommendations for improving the project. Include a markdown table with Priority, Recommendation, and Expected Impact columns.
+
+## References and Bibliography
+List all sources, documentation, and files referenced in this report.
+
+## Appendices
+Include any additional supporting material, code snippets, or technical details.
+
+CRITICAL RULES:
+- NEVER use placeholder text like [Author Name], [Date], [Description] — always write real content
+- NEVER write a section with less than 3 paragraphs
+- Use proper markdown: # for H1, ## for H2, ### for H3, **bold**, bullet lists, numbered lists, tables
+- Write ${targetWords}+ words total
+- Base all findings on the actual repository content provided above`
 
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openrouterApiKey}`,
-          'HTTP-Referer': 'http://localhost:3000',
-          'X-Title': 'SaaS Report Generator'
+          'Authorization': `Bearer ${groqApiKey}`,
         },
         body: JSON.stringify({
-          model: 'openai/gpt-3.5-turbo',
+          model: 'llama-3.3-70b-versatile',
           messages: [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
+            { role: 'user', content: userPrompt },
           ],
-          temperature: 0.6,
-          max_tokens: 3500
-        })
+          temperature: 0.5,
+          max_tokens: 8000,
+        }),
       })
 
       if (!response.ok) {
@@ -144,64 +164,59 @@ export async function callToolHandler(
           detail = await response.text()
         }
         const hint = response.status === 401
-          ? 'OpenRouter API unauthorized. Check OPENROUTER_API_KEY.'
-          : `OpenRouter API error: ${response.status} ${response.statusText}`
-        throw new Error(detail ? `${hint} ${detail}` : hint)
+          ? 'Groq API unauthorized. Check GROQ_API_KEY.'
+          : `Groq API error: ${response.status} ${response.statusText}`
+        throw new Error(detail ? `${hint} — ${detail}` : hint)
       }
 
       const data = await response.json()
       const report = data.choices[0]?.message?.content || 'Failed to generate report'
       return { result: report }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown OpenRouter error'
-      throw new Error(`Failed to call OpenRouter API: ${message}`)
+      const message = err instanceof Error ? err.message : 'Unknown Groq error'
+      throw new Error(`Failed to call Groq API: ${message}`)
     }
   }
 
   if (name === 'regenerate_section') {
-    const { originalSection, feedback, fullContent, prompt } = safeArgs
-    
-    // Call OpenRouter API for section regeneration
-    const openrouterApiKey = process.env.OPENROUTER_API_KEY
-    if (!openrouterApiKey) {
-      throw new Error('OPENROUTER_API_KEY not found in environment variables')
-    }
+    const { originalSection, feedback, fullContent } = safeArgs
+
+    const groqApiKey = process.env.GROQ_API_KEY
+    if (!groqApiKey) throw new Error('GROQ_API_KEY not found in environment variables')
 
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openrouterApiKey}`,
-          'HTTP-Referer': 'http://localhost:3000',
-          'X-Title': 'SaaS Report Generator'
+          'Authorization': `Bearer ${groqApiKey}`,
         },
         body: JSON.stringify({
-          model: 'openai/gpt-3.5-turbo',
+          model: 'llama-3.3-70b-versatile',
           messages: [
             {
               role: 'system',
-              content: 'You are a document editor. Modify the provided section based on user feedback. Return ONLY the modified section in markdown format, nothing else.'
+              content: `You are a document editor. Rewrite the provided section based on user feedback.
+Return ONLY the updated markdown section — no preamble, no explanation, no extra commentary.
+Keep the same heading structure. Write full, substantial content — never placeholder text.`,
             },
             {
               role: 'user',
-              content: `
-ORIGINAL SECTION:
+              content: `ORIGINAL SECTION:
 ${originalSection}
 
 USER FEEDBACK:
 ${feedback}
 
-CONTEXT (for reference):
-${fullContent.substring(0, 500)}...
+FULL REPORT CONTEXT:
+${fullContent || 'No additional context.'}
 
-Please modify the section to address the user's feedback. Keep the same markdown format and structure. Return ONLY the updated section.
-`
-            }
+Rewrite the section addressing the feedback. Return ONLY the updated section in markdown.`,
+            },
           ],
-          temperature: 0.7,
-          max_tokens: 1500
-        })
+          temperature: 0.6,
+          max_tokens: 2000,
+        }),
       })
 
       if (!response.ok) {
@@ -212,20 +227,17 @@ Please modify the section to address the user's feedback. Keep the same markdown
         } catch {
           detail = await response.text()
         }
-        const hint = response.status === 401
-          ? 'OpenRouter API unauthorized. Check OPENROUTER_API_KEY.'
-          : `OpenRouter API error: ${response.status} ${response.statusText}`
-        throw new Error(detail ? `${hint} ${detail}` : hint)
+        throw new Error(`Groq API error ${response.status}: ${detail}`)
       }
 
       const data = await response.json()
       const regeneratedSection = data.choices[0]?.message?.content || 'Failed to regenerate section'
       return { result: regeneratedSection }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown OpenRouter error'
-      throw new Error(`Failed to call OpenRouter API: ${message}`)
+      const message = err instanceof Error ? err.message : 'Unknown Groq error'
+      throw new Error(`Failed to call Groq API: ${message}`)
     }
   }
 
-  throw new Error('Tool not found')
+  throw new Error(`Tool not found: ${name}`)
 }

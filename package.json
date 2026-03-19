@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "docx": "^9.6.1",
+    "html2canvas-pro": "^2.0.2",
+    "jspdf": "^4.2.1",
+    "marked": "^17.0.4",
+    "puppeteer": "^24.40.0"
+  }
+}

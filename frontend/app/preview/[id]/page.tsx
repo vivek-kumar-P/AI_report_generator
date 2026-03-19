@@ -1,19 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useReportStore } from '@/lib/store'
 import { splitReportIntoPages, markdownToBasicHtml } from '@/lib/report-utils'
 import { Spinner } from '@/components/ui/spinner'
 
-interface PageProps {
-  params: {
-    id: string
-  }
-}
-
-export default function ReportViewPage({ params }: PageProps) {
+export default function ReportViewPage() {
   const router = useRouter()
+  const params = useParams()
   const { setPages, setPagesHtml, setFormData } = useReportStore()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

@@ -8,9 +8,10 @@ import A4Page from '@/components/A4Page'
 import { useReportStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
 import { Download, ArrowLeft, AlertCircle, Loader } from 'lucide-react'
+import { markdownToBasicHtml } from '@/lib/report-utils'
 
 export default function ExportPage() {
-  const { pages } = useReportStore()
+  const { pages, pagesHtml } = useReportStore()
   const [isDownloading, setIsDownloading] = useState(false)
   const pdfPageRefs = useRef<Array<HTMLDivElement | null>>([])
 
@@ -40,39 +41,7 @@ export default function ExportPage() {
     setIsDownloading(true)
 
     try {
-      const [{ jsPDF }, html2canvasModule] = await Promise.all([
-        import('jspdf'),
-        import('html2canvas')
-      ])
-
-      const html2canvas = html2canvasModule.default
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
-
-      for (let index = 0; index < pdfPageRefs.current.length; index += 1) {
-        const pageElement = pdfPageRefs.current[index]
-        if (!pageElement) continue
-
-        const canvas = await html2canvas(pageElement, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff'
-        })
-
-        const imgData = canvas.toDataURL('image/png')
-        const pageWidth = pdf.internal.pageSize.getWidth()
-        const pageHeight = pdf.internal.pageSize.getHeight()
-        const imgWidth = pageWidth
-        const imgHeight = (canvas.height * imgWidth) / canvas.width
-        const yOffset = Math.max(0, (pageHeight - imgHeight) / 2)
-
-        if (index > 0) {
-          pdf.addPage()
-        }
-
-        pdf.addImage(imgData, 'PNG', 0, yOffset, imgWidth, imgHeight)
-      }
-
-      pdf.save('report.pdf')
+      window.print()
     } catch (error) {
       console.error('PDF export failed:', error)
       alert('PDF export failed. Please try again.')
@@ -116,9 +85,21 @@ export default function ExportPage() {
               >
                 <div className="w-full max-w-sm">
                   <A4Page
-                    content={page}
+                    contentHtml={pagesHtml?.[index] || markdownToBasicHtml(page)}
                     pageNumber={index + 1}
                     totalPages={pages.length}
+                    showBorder={true}
+                    showFooter={true}
+                    pagePadding={32}
+                    lineHeight={1.6}
+                    fontSize="16px"
+                    fontFamily="Arial"
+                    textColor="#1e293b"
+                    highlightColor="#fde68a"
+                    pageTint="#ffffff"
+                    pendingImage={null}
+                    onImageHandled={() => {}}
+                    onContentChange={() => {}}
                   />
                 </div>
               </motion.div>
@@ -184,9 +165,21 @@ export default function ExportPage() {
               className="w-[794px]"
             >
               <A4Page
-                content={page}
+                contentHtml={pagesHtml?.[index] || markdownToBasicHtml(page)}
                 pageNumber={index + 1}
                 totalPages={pages.length}
+                showBorder={false}
+                showFooter={true}
+                pagePadding={32}
+                lineHeight={1.6}
+                fontSize="16px"
+                fontFamily="Arial"
+                textColor="#1e293b"
+                highlightColor="#fde68a"
+                pageTint="#ffffff"
+                pendingImage={null}
+                onImageHandled={() => {}}
+                onContentChange={() => {}}
               />
             </div>
           ))}

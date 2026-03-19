@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 import Navbar from '@/components/Navbar'
 import A4Page, { type A4PageHandle } from '@/components/A4Page'
 import { useReportStore } from '@/lib/store'
@@ -22,6 +20,7 @@ export default function PreviewPage() {
   const [maxPages, setMaxPages] = useState(pages?.length || 10)
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isDownloadingWord, setIsDownloadingWord] = useState(false)
   const [showBorder, setShowBorder] = useState(true)
   const [showFooter, setShowFooter] = useState(true)
   const [pagePadding, setPagePadding] = useState(32)
@@ -155,134 +154,94 @@ export default function PreviewPage() {
     }
   }
 
-  const handleDownloadPDF = async () => {
-    setIsDownloading(true)
-    try {
-      const pages = document.querySelectorAll('.a4-page')
-      if (pages.length === 0) {
-        toast({
-          variant: 'destructive',
-          title: 'No pages found',
-          description: 'Unable to find pages to export',
-        })
-        setIsDownloading(false)
-        return
-      }
+// Replace handleDownloadPDF in preview/page.tsx with this:
 
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      })
+const handleDownloadPDF = async () => {
+  setIsDownloading(true)
+  try {
+    const markdownPages = pages // from useReportStore()
 
-      const errors: string[] = []
-      const scale = Math.min(2, window.devicePixelRatio || 2)
-
-      for (let i = 0; i < pages.length; i++) {
-        if (i > 0) {
-          pdf.addPage()
-        }
-
-        const element = pages[i] as HTMLElement
-        try {
-          const canvas = await html2canvas(element, {
-            scale,
-            useCORS: true,
-            allowTaint: false,
-            backgroundColor: '#ffffff',
-            imageTimeout: 15000,
-            removeContainer: true,
-            onclone: (doc) => {
-              doc.querySelectorAll('[contenteditable]').forEach((node) => {
-                node.setAttribute('contenteditable', 'false')
-              })
-
-              const isUnsupported = (value: string) =>
-                value.includes('lab(') || value.includes('oklch(') || value.includes('color(')
-
-              const sanitize = (value: string, fallback: string) =>
-                isUnsupported(value) ? fallback : value
-
-              // Disable stylesheets that include unsupported color functions.
-              Array.from(doc.styleSheets).forEach((sheet) => {
-                try {
-                  const rules = (sheet as CSSStyleSheet).cssRules
-                  if (!rules) return
-                  for (const rule of Array.from(rules)) {
-                    if (rule.cssText && isUnsupported(rule.cssText)) {
-                      sheet.disabled = true
-                      break
-                    }
-                  }
-                } catch {
-                  // Ignore cross-origin stylesheets
-                }
-              })
-
-              doc.querySelectorAll('.a4-page *').forEach((node) => {
-                const style = doc.defaultView?.getComputedStyle(node as Element)
-                if (!style) return
-
-                const color = sanitize(style.color, '#0f172a')
-                const background = sanitize(style.backgroundColor, 'transparent')
-                const borderColor = sanitize(style.borderColor, '#cbd5e1')
-                const outlineColor = sanitize(style.outlineColor, '#cbd5e1')
-                const caretColor = sanitize(style.caretColor, '#0f172a')
-                const textShadow = sanitize(style.textShadow, 'none')
-                const backgroundImage = sanitize(style.backgroundImage, 'none')
-                const filter = sanitize(style.filter, 'none')
-
-                const elementNode = node as HTMLElement
-                elementNode.style.color = color
-                elementNode.style.backgroundColor = background
-                elementNode.style.borderColor = borderColor
-                elementNode.style.outlineColor = outlineColor
-                elementNode.style.caretColor = caretColor
-                elementNode.style.textShadow = textShadow
-                elementNode.style.backgroundImage = backgroundImage
-                elementNode.style.filter = filter
-
-                if (isUnsupported(style.boxShadow)) {
-                  elementNode.style.boxShadow = 'none'
-                }
-              })
-            },
-          })
-
-          const imgData = canvas.toDataURL('image/jpeg', 0.98)
-          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297)
-        } catch (pageError) {
-          const message = pageError instanceof Error ? pageError.message : 'Unknown page render error'
-          errors.push(`Page ${i + 1}: ${message}`)
-        }
-      }
-
-      if (errors.length > 0) {
-        toast({
-          variant: 'destructive',
-          title: 'PDF export partial failure',
-          description: errors[0],
-        })
-        return
-      }
-
-      pdf.save('report.pdf')
-      toast({
-        title: 'Success',
-        description: `PDF with ${pages.length} page(s) downloaded`,
-      })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download PDF'
-      console.error('PDF download error:', err)
-      toast({
-        variant: 'destructive',
-        title: 'Download failed',
-        description: message,
-      })
-    } finally {
-      setIsDownloading(false)
+    if (!markdownPages || markdownPages.length === 0) {
+      toast({ variant: 'destructive', title: 'No content', description: 'No pages to export' })
+      return
     }
+
+    const res = await fetch('/api/export/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pages: markdownPages }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(err.error || 'Server failed to generate PDF')
+    }
+
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'report.pdf'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast({ title: 'Success', description: `PDF with ${markdownPages.length} page(s) downloaded!` })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to download PDF'
+    console.error('PDF error:', err)
+    toast({ variant: 'destructive', title: 'Download failed', description: message })
+  } finally {
+    setIsDownloading(false)
   }
+}
+
+// ── Replace handleDownloadWord in preview/page.tsx ───────────
+// This version sends raw markdown pages to the backend
+// which uses the docx npm library to generate a proper Word file
+
+const handleDownloadWord = async () => {
+  setIsDownloadingWord(true)
+  try {
+    // Get raw markdown pages from the store (not DOM HTML)
+    const markdownPages = pages // this is the `pages` array from useReportStore()
+
+    if (!markdownPages || markdownPages.length === 0) {
+      toast({ variant: 'destructive', title: 'No content', description: 'No pages to export' })
+      return
+    }
+
+    const res = await fetch('/api/export/docx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pages: markdownPages }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(err.error || 'Server failed to generate document')
+    }
+
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'report.docx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast({ title: 'Success', description: `Word document with ${markdownPages.length} page(s) downloaded!` })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to download Word document'
+    console.error('Word download error:', err)
+    toast({ variant: 'destructive', title: 'Download failed', description: message })
+  } finally {
+    setIsDownloadingWord(false)
+  }
+}
 
   return (
     <div className="min-h-screen bg-background/95 landing-shell">
@@ -676,23 +635,47 @@ export default function PreviewPage() {
                     )}
                   </Button>
 
-                  <Button
-                    onClick={handleDownloadPDF}
-                    disabled={isDownloading}
-                    className="w-full gap-2 cta-secondary"
-                  >
-                    {isDownloading ? (
-                      <>
-                        <Loader className="w-4 h-4 animate-spin" />
-                        Downloading...
-                      </>
-                    ) : (
-                      <>
-                        <FileDown className="w-4 h-4" />
-                        Download PDF
-                      </>
-                    )}
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={handleDownloadPDF}
+                      disabled={isDownloading || isDownloadingWord}
+                      className="w-full gap-1.5 cta-secondary"
+                    >
+                      {isDownloading ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          Wait...
+                        </>
+                      ) : (
+                        <>
+                          <span>Download</span>
+                          <span className="flex items-center justify-center font-bold text-[10px] tracking-wider bg-red-500/10 text-red-500 border border-red-500/20 px-1.5 py-0.5 rounded shadow-sm">
+                            PDF
+                          </span>
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      onClick={handleDownloadWord}
+                      disabled={isDownloadingWord || isDownloading}
+                      className="w-full gap-1.5 cta-secondary"
+                    >
+                      {isDownloadingWord ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          Wait...
+                        </>
+                      ) : (
+                        <>
+                          <span>Download</span>
+                          <span className="flex items-center justify-center font-bold text-[10px] tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20 px-1.5 py-0.5 rounded shadow-sm">
+                            DOCX
+                          </span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
 
                   <Link href="/" className="block">
                     <Button variant="outline" className="w-full cta-secondary">

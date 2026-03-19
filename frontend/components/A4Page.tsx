@@ -61,9 +61,7 @@ const FontSize = Extension.create({
             default: null,
             parseHTML: (element) => element.style.fontSize || null,
             renderHTML: (attributes) => {
-              if (!attributes.fontSize) {
-                return {}
-              }
+              if (!attributes.fontSize) return {}
               return { style: `font-size: ${attributes.fontSize}` }
             },
           },
@@ -75,18 +73,15 @@ const FontSize = Extension.create({
     return {
       setFontSize:
         (fontSize: string) =>
-        ({ chain }) =>
+        ({ chain }: any) =>
           chain().setMark('textStyle', { fontSize }).run(),
       unsetFontSize:
         () =>
-        ({ chain }) =>
+        ({ chain }: any) =>
           chain().setMark('textStyle', { fontSize: null }).run(),
-    }
+    } as any
   },
 })
-
-const fontFamilies = ['Arial', 'Georgia', 'Times New Roman', 'Verdana', 'Courier New']
-const fontSizes = ['12px', '14px', '16px', '18px', '20px', '22px', '24px']
 
 const A4Page = forwardRef<A4PageHandle, A4PageProps>(({
   contentHtml,
@@ -108,6 +103,7 @@ const A4Page = forwardRef<A4PageHandle, A4PageProps>(({
   const updateTimer = useRef<number | null>(null)
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       TextStyle,
@@ -123,8 +119,15 @@ const A4Page = forwardRef<A4PageHandle, A4PageProps>(({
     content: contentHtml || '<p></p>',
     editorProps: {
       attributes: {
-        class: 'tiptap-editor min-h-full outline-none',
-        style: `line-height: ${lineHeight}; font-size: ${fontSize}; font-family: ${fontFamily}; color: ${textColor};`,
+        class: 'tiptap ProseMirror tiptap-editor outline-none w-full',
+        style: `
+          line-height: ${lineHeight};
+          font-size: ${fontSize};
+          font-family: ${fontFamily};
+          color: ${textColor};
+          word-break: break-word;
+          overflow-wrap: break-word;
+        `,
       },
       handlePaste: (_view, event) => {
         const items = event.clipboardData?.items
@@ -146,9 +149,7 @@ const A4Page = forwardRef<A4PageHandle, A4PageProps>(({
       },
     },
     onUpdate: ({ editor }) => {
-      if (updateTimer.current) {
-        window.clearTimeout(updateTimer.current)
-      }
+      if (updateTimer.current) window.clearTimeout(updateTimer.current)
       updateTimer.current = window.setTimeout(() => {
         onContentChange(editor.getHTML())
       }, 300)
@@ -165,22 +166,22 @@ const A4Page = forwardRef<A4PageHandle, A4PageProps>(({
 
   useEffect(() => {
     if (!editor) return
-    editor.chain().focus().setFontFamily(fontFamily).run()
+    editor.chain().setFontFamily(fontFamily).run()
   }, [editor, fontFamily])
 
   useEffect(() => {
     if (!editor) return
-    editor.chain().focus().setFontSize(fontSize).run()
+    ;(editor.chain() as any).setFontSize(fontSize).run()
   }, [editor, fontSize])
 
   useEffect(() => {
     if (!editor) return
-    editor.chain().focus().setColor(textColor).run()
+    editor.chain().setColor(textColor).run()
   }, [editor, textColor])
 
   useEffect(() => {
     if (!editor) return
-    editor.chain().focus().setHighlight({ color: highlightColor }).run()
+    editor.chain().setHighlight({ color: highlightColor }).run()
   }, [editor, highlightColor])
 
   useEffect(() => {
@@ -216,45 +217,46 @@ const A4Page = forwardRef<A4PageHandle, A4PageProps>(({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: pageNumber * 0.1 }}
-      className="relative"
+      transition={{ duration: 0.3, delay: Math.min(pageNumber * 0.04, 0.4) }}
+      className="relative flex justify-center"
     >
-      {/* A4 Paper */}
       <div
-        className={`w-full max-w-[794px] aspect-[210/297] shadow-lg rounded-sm a4-page ${
-          showBorder ? 'border' : 'border-transparent'
+        className={`a4-page w-[794px] min-h-[1123px] shadow-xl rounded-sm ${
+          showBorder ? 'ring-1 ring-slate-300' : ''
         }`}
-        style={{ backgroundColor: pageTint, color: '#0f172a', borderColor: '#cbd5e1' }}
+        style={{ backgroundColor: pageTint }}
       >
-        {/* Page Header with Border */}
         <div
-          className={`h-full flex flex-col ${showBorder ? 'border-4' : 'border'}`}
-          style={{ backgroundColor: pageTint, borderColor: '#94a3b8', padding: pagePadding }}
+          className="w-full min-h-[1123px] flex flex-col"
+          style={{
+            backgroundColor: pageTint,
+            border: showBorder ? '3px solid #94a3b8' : 'none',
+            padding: `${pagePadding}px`,
+          }}
         >
-          {/* Content Area */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <div className="h-full flex flex-col max-w-none">
-              <EditorErrorBoundary>
-                {editor ? (
-                  <EditorContent editor={editor} className="h-full" />
-                ) : (
-                  <div className="text-sm text-muted-foreground">Loading editor...</div>
-                )}
-              </EditorErrorBoundary>
-            </div>
+          <div className="flex-1">
+            <EditorErrorBoundary>
+              {editor ? (
+                <EditorContent editor={editor} />
+              ) : (
+                <div className="text-sm text-slate-400 animate-pulse">Loading editor...</div>
+              )}
+            </EditorErrorBoundary>
           </div>
 
-          {/* Page Number at Bottom */}
           {showFooter && (
-            <div className="flex justify-between items-end pt-4 border-t mt-4" style={{ borderColor: '#cbd5e1' }}>
-              <div className="text-xs" style={{ color: '#475569' }}>
+            <div
+              className="flex justify-between items-center pt-3 mt-6"
+              style={{ borderTop: '1px solid #e2e8f0' }}
+            >
+              <span className="text-[11px] tracking-wide uppercase" style={{ color: '#94a3b8' }}>
                 Generated Report
-              </div>
-              <div className="text-sm font-semibold" style={{ color: '#1e293b' }}>
+              </span>
+              <span className="text-xs font-semibold" style={{ color: '#64748b' }}>
                 {pageNumber} / {totalPages}
-              </div>
+              </span>
             </div>
           )}
         </div>
