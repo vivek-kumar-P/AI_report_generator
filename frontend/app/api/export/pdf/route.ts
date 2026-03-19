@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import chromium from '@sparticuz/chromium'
 import puppeteer from 'puppeteer-core'
 import puppeteerLocal from 'puppeteer'
 
@@ -94,6 +93,14 @@ function markdownToHtml(markdown: string): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // On Vercel, PDF generation requires client-side export
+    if (process.env.VERCEL) {
+      return NextResponse.json(
+        { error: 'PDF export on Vercel requires client-side generation. Use the Download PDF button in the preview.' },
+        { status: 501 }
+      )
+    }
+
     const { pages } = await req.json()
 
     if (!pages || !Array.isArray(pages) || pages.length === 0) {
@@ -285,14 +292,18 @@ export async function POST(req: NextRequest) {
 </html>`
 
     const browser = process.env.VERCEL
-      ? await puppeteer.launch({
-          args: chromium.args,
-          executablePath: await chromium.executablePath(),
-        })
+      ? null
       : await puppeteerLocal.launch({
           headless: true,
           args: ['--no-sandbox', '--disable-setuid-sandbox'],
         })
+
+    if (!browser) {
+      return NextResponse.json(
+        { error: 'PDF export on Vercel requires client-side generation. Use the Download PDF button in the preview.' },
+        { status: 501 }
+      )
+    }
 
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'networkidle0' })

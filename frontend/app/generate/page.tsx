@@ -185,13 +185,12 @@ export default function GeneratePage() {
           })
 
           if (saveResponse.status === 401) {
-            // Guests can still generate reports; persistence requires login.
+            // Guests can still generate reports; persistence requires login
           } else if (!saveResponse.ok) {
-            console.error('Failed to save report to database')
+            // Silently fail to not interrupt the generation flow
           }
         } catch (saveError) {
-          console.error('Error saving report:', saveError)
-          // Don't fail the whole generation if save fails
+          // Network error or parsing error, don't fail the generation
         }
 
         // Stage: COMPLETE
