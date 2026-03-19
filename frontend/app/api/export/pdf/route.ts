@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
+import chromium from '@sparticuz/chromium'
+import puppeteer from 'puppeteer-core'
+import puppeteerLocal from 'puppeteer'
 
 export const runtime = 'nodejs'
 
@@ -282,10 +284,15 @@ export async function POST(req: NextRequest) {
 <body>${pagesHtml}</body>
 </html>`
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
+    const browser = process.env.VERCEL
+      ? await puppeteer.launch({
+          args: chromium.args,
+          executablePath: await chromium.executablePath(),
+        })
+      : await puppeteerLocal.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        })
 
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'networkidle0' })

@@ -184,7 +184,9 @@ export default function GeneratePage() {
             }),
           })
 
-          if (!saveResponse.ok) {
+          if (saveResponse.status === 401) {
+            // Guests can still generate reports; persistence requires login.
+          } else if (!saveResponse.ok) {
             console.error('Failed to save report to database')
           }
         } catch (saveError) {
