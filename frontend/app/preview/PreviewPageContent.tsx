@@ -39,7 +39,34 @@ const downloadPdfClientSide = async (markdownPages: string[]) => {
     container.style.minHeight = '1123px'
     container.style.padding = '48px'
     container.style.background = '#ffffff'
-    container.innerHTML = markdownToBasicHtml(markdown)
+    container.style.color = '#0f172a'
+    container.style.opacity = '1'
+    container.style.fontFamily = 'Arial, Helvetica, sans-serif'
+    container.style.fontSize = '16px'
+    container.style.lineHeight = '1.6'
+    container.innerHTML = `
+      <style>
+        .pdf-export-scope, .pdf-export-scope * {
+          opacity: 1 !important;
+          color: #0f172a !important;
+          filter: none !important;
+          text-shadow: none !important;
+          mix-blend-mode: normal !important;
+          -webkit-text-fill-color: #0f172a !important;
+        }
+        .pdf-export-scope a {
+          color: #1d4ed8 !important;
+          text-decoration: underline;
+        }
+        .pdf-export-scope code,
+        .pdf-export-scope pre {
+          color: #0f172a !important;
+          background: #f8fafc !important;
+          border-color: #e2e8f0 !important;
+        }
+      </style>
+      <div class="pdf-export-scope">${markdownToBasicHtml(markdown)}</div>
+    `
     document.body.appendChild(container)
 
     try {
