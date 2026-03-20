@@ -1,8 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import puppeteer from 'puppeteer-core'
-import puppeteerLocal from 'puppeteer'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
+
+async function launchBrowser() {
+  if (process.env.VERCEL) {
+    const chromium = (await import('@sparticuz/chromium')).default
+    const executablePath = await chromium.executablePath()
+
+    return puppeteer.launch({
+      args: chromium.args,
+      executablePath,
+      headless: true,
+    })
+  }
+
+  const puppeteerLocal = (await import('puppeteer')).default
+  return puppeteerLocal.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  })
+}
 
 function markdownToHtml(markdown: string): string {
   if (!markdown) return ''
@@ -93,14 +112,6 @@ function markdownToHtml(markdown: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    // On Vercel, PDF generation requires client-side export
-    if (process.env.VERCEL) {
-      return NextResponse.json(
-        { error: 'PDF export on Vercel requires client-side generation. Use the Download PDF button in the preview.' },
-        { status: 501 }
-      )
-    }
-
     const { pages } = await req.json()
 
     if (!pages || !Array.isArray(pages) || pages.length === 0) {
@@ -291,18 +302,19 @@ export async function POST(req: NextRequest) {
 <body>${pagesHtml}</body>
 </html>`
 
-    const browser = process.env.VERCEL
-      ? null
-      : await puppeteerLocal.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        })
-
-    if (!browser) {
-      return NextResponse.json(
-        { error: 'PDF export on Vercel requires client-side generation. Use the Download PDF button in the preview.' },
-        { status: 501 }
-      )
+    let browser
+    try {
+      browser = await launchBrowser()
+    } catch (launchError) {
+      const message = launchError instanceof Error ? launchError.message : 'Failed to launch browser'
+      if (process.env.VERCEL) {
+        console.error('[PDF Export] Vercel browser launch failed:', message)
+        return NextResponse.json(
+          { error: 'Server-side PDF unavailable. Please use client-side PDF generation fallback.' },
+          { status: 501 }
+        )
+      }
+      throw launchError
     }
 
     const page = await browser.newPage()
