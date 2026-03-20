@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -12,81 +12,77 @@ import { FileDown, ChevronUp, ChevronDown, Loader, RefreshCw, Palette, Type, Ima
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
 
-// PNG export function - creates high-quality images from each page
-async function exportReportPages(
-  pages: string[],
-  toast: ReturnType<typeof useToast>['toast'],
-  setIsDownloading: (value: boolean) => void
-) {
-  try {
-    // Dynamically import html2canvas only when needed
-    const html2canvas = (await import('html2canvas-pro')).default
-
-    if (!pages || pages.length === 0) {
-      toast({ variant: 'destructive', title: 'No content', description: 'No pages to export' })
-      return
-    }
-
-    // Convert each page to PNG and collect
-    const pageImages: { data: string; pageNum: number }[] = []
-
-    for (let i = 0; i < pages.length; i++) {
-      const htmlContent = markdownToBasicHtml(pages[i])
-      const container = document.createElement('div')
-      container.style.position = 'absolute'
-      container.style.left = '-9999px'
-      container.style.width = '794px' // A4 width in pixels at 96 DPI
-      container.style.padding = '0'
-      container.style.backgroundColor = '#ffffff'
-      container.innerHTML = htmlContent
-      document.body.appendChild(container)
-
-      try {
-        const canvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          allowTaint: true,
-        })
-
-        const imageData = canvas.toDataURL('image/png')
-        pageImages.push({ data: imageData, pageNum: i + 1 })
-      } finally {
-        document.body.removeChild(container)
-      }
-    }
-
-    // Download single page as PNG or all pages individually
-    if (pageImages.length === 1) {
-      const a = document.createElement('a')
-      a.href = pageImages[0].data
-      a.download = 'report-page-1.png'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    } else {
-      for (let i = 0; i < pageImages.length; i++) {
-        const a = document.createElement('a')
-        a.href = pageImages[i].data
-        a.download = `report-page-${pageImages[i].pageNum}.png`
-        document.body.appendChild(a)
-        // Stagger downloads slightly
-        await new Promise((resolve) => setTimeout(() => { a.click(); document.body.removeChild(a); resolve(null) }, 100 * (i + 1)))
-      }
-    }
-
-    toast({
-      title: 'Success',
-      description: `${pageImages.length} page(s) exported as PNG image${pageImages.length > 1 ? 's' : ''}. You can combine them into a PDF using online tools.`,
-    })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to export pages'
-    console.error('Export error:', err)
-    toast({ variant: 'destructive', title: 'Export failed', description: message })
-  } finally {
-    setIsDownloading(false)
+const dataUrlToUint8Array = (dataUrl: string) => {
+  const base64 = dataUrl.split(',')[1] || ''
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
   }
+  return bytes
+}
+
+const downloadPdfClientSide = async (markdownPages: string[]) => {
+  const html2canvas = (await import('html2canvas-pro')).default
+  const { PDFDocument } = await import('pdf-lib')
+
+  const pdfDoc = await PDFDocument.create()
+  const pageWidth = 595.28
+  const pageHeight = 841.89
+  const margin = 24
+
+  for (const markdown of markdownPages) {
+    const container = document.createElement('div')
+    container.style.position = 'absolute'
+    container.style.left = '-9999px'
+    container.style.width = '794px'
+    container.style.minHeight = '1123px'
+    container.style.padding = '48px'
+    container.style.background = '#ffffff'
+    container.innerHTML = markdownToBasicHtml(markdown)
+    document.body.appendChild(container)
+
+    try {
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      })
+
+      const pngBytes = dataUrlToUint8Array(canvas.toDataURL('image/png'))
+      const image = await pdfDoc.embedPng(pngBytes)
+      const page = pdfDoc.addPage([pageWidth, pageHeight])
+
+      const maxWidth = pageWidth - margin * 2
+      const maxHeight = pageHeight - margin * 2
+      const scale = Math.min(maxWidth / image.width, maxHeight / image.height)
+      const drawWidth = image.width * scale
+      const drawHeight = image.height * scale
+
+      page.drawImage(image, {
+        x: (pageWidth - drawWidth) / 2,
+        y: pageHeight - margin - drawHeight,
+        width: drawWidth,
+        height: drawHeight,
+      })
+    } finally {
+      document.body.removeChild(container)
+    }
+  }
+
+  const pdfBytes = await pdfDoc.save()
+  const pdfBody = new Uint8Array(pdfBytes.byteLength)
+  pdfBody.set(pdfBytes)
+  const blob = new Blob([pdfBody], { type: 'application/pdf' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'report.pdf'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 export default function PreviewPageContent() {
@@ -133,10 +129,10 @@ export default function PreviewPageContent() {
 
   const zoomScale = zoomMode === 'fit' ? fitZoom : zoom
   const pageGap = Math.max(12, Math.round(32 * zoomScale))
-  
   const scrollToPage = (index: number) => {
     const safeIndex = Math.max(0, Math.min(totalPages - 1, index))
     setCurrentPageIndex(safeIndex)
+
     requestAnimationFrame(() => {
       const target = pageRefs.current[safeIndex]
       if (target) {
@@ -171,6 +167,7 @@ export default function PreviewPageContent() {
     updateFit()
     const observer = new ResizeObserver(updateFit)
     observer.observe(viewport)
+
     return () => observer.disconnect()
   }, [zoomMode])
 
@@ -179,9 +176,11 @@ export default function PreviewPageContent() {
     
     setIsRegenerating(true)
     try {
+      // Identify which section to modify
       const target = identifyFeedbackTarget(feedback, pages)
       const fullContent = pages.join('\n\n---\n\n')
       
+      // Call OpenRouter API to regenerate the section
       const regenerateResult = await fetch('/api/tools/call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -195,12 +194,14 @@ export default function PreviewPageContent() {
         })
       }).then(res => res.json())
 
+      // Update the specific page with regenerated content
       if (regenerateResult.result) {
         const updatedPages = [...pages]
         updatedPages[target.pageIndex] = regenerateResult.result
         const updatedPagesHtml = [...displayPagesHtml]
         updatedPagesHtml[target.pageIndex] = markdownToBasicHtml(regenerateResult.result)
         
+        // Update pages in the store
         setPages(updatedPages)
         setPagesHtml(updatedPagesHtml)
         
@@ -226,51 +227,102 @@ export default function PreviewPageContent() {
     }
   }
 
-  const handleDownloadImages = async () => {
-    setIsDownloading(true)
-    await exportReportPages(pages || [], toast, setIsDownloading)
-  }
+const handleDownloadPDF = async () => {
+  setIsDownloading(true)
+  try {
+    const markdownPages = pages
 
-  const handleDownloadWord = async () => {
-    setIsDownloadingWord(true)
-    try {
-      const markdownPages = pages
+    if (!markdownPages || markdownPages.length === 0) {
+      toast({ variant: 'destructive', title: 'No content', description: 'No pages to export' })
+      return
+    }
 
-      if (!markdownPages || markdownPages.length === 0) {
-        toast({ variant: 'destructive', title: 'No content', description: 'No pages to export' })
+    const res = await fetch('/api/export/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pages: markdownPages }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+      if (res.status === 501) {
+        await downloadPdfClientSide(markdownPages)
+        toast({ title: 'Success', description: `PDF with ${markdownPages.length} page(s) downloaded!` })
         return
       }
-
-      const res = await fetch('/api/export/docx', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pages: markdownPages }),
-      })
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(err.error || 'Server failed to generate document')
-      }
-
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = 'report.docx'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
-      toast({ title: 'Success', description: `Word document with ${markdownPages.length} page(s) downloaded!` })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download Word document'
-      console.error('Word download error:', err)
-      toast({ variant: 'destructive', title: 'Download failed', description: message })
-    } finally {
-      setIsDownloadingWord(false)
+      throw new Error(err.error || 'Server failed to generate PDF')
     }
+
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'report.pdf'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast({ title: 'Success', description: `PDF with ${markdownPages.length} page(s) downloaded!` })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to download PDF'
+    if (message.toLowerCase().includes('client-side generation')) {
+      try {
+        await downloadPdfClientSide(pages || [])
+        toast({ title: 'Success', description: `PDF with ${(pages || []).length} page(s) downloaded!` })
+        return
+      } catch {
+        // Fall through to destructive toast below.
+      }
+    }
+    console.error('PDF error:', err)
+    toast({ variant: 'destructive', title: 'Download failed', description: message })
+  } finally {
+    setIsDownloading(false)
   }
+}
+
+const handleDownloadWord = async () => {
+  setIsDownloadingWord(true)
+  try {
+    // Get raw markdown pages from the store (not DOM HTML)
+    const markdownPages = pages // this is the `pages` array from useReportStore()
+
+    if (!markdownPages || markdownPages.length === 0) {
+      toast({ variant: 'destructive', title: 'No content', description: 'No pages to export' })
+      return
+    }
+
+    const res = await fetch('/api/export/docx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pages: markdownPages }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(err.error || 'Server failed to generate document')
+    }
+
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'report.docx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast({ title: 'Success', description: `Word document with ${markdownPages.length} page(s) downloaded!` })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to download Word document'
+    console.error('Word download error:', err)
+    toast({ variant: 'destructive', title: 'Download failed', description: message })
+  } finally {
+    setIsDownloadingWord(false)
+  }
+}
 
   return (
     <div className="min-h-screen bg-background/95 landing-shell">
@@ -400,7 +452,7 @@ export default function PreviewPageContent() {
             </ScrollArea>
           </motion.div>
 
-          {/* RIGHT: Customization & Actions - omitting long panel content for brevity, same as before */}
+          {/* RIGHT: Customization & Actions */}
           <motion.aside
             className="w-full md:w-[360px] flex-shrink-0"
             initial={{ opacity: 0, x: 20 }}
@@ -416,6 +468,232 @@ export default function PreviewPageContent() {
                     </p>
                   </div>
                   <SlidersHorizontal className="h-5 w-5 text-muted-foreground" />
+                </div>
+
+                {/* Typography */}
+                <div className="space-y-3 border-t border-muted pt-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Type className="h-4 w-4" /> Typography
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80"
+                      onClick={() => editorRef.current?.setParagraph()}
+                    >
+                      Paragraph
+                    </button>
+                    <select
+                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover text-foreground"
+                      onChange={(e) => {
+                        const level = Number(e.target.value) as 1 | 2 | 3
+                        editorRef.current?.setHeading(level)
+                      }}
+                      defaultValue="2"
+                    >
+                      <option value="1">Heading 1</option>
+                      <option value="2">Heading 2</option>
+                      <option value="3">Heading 3</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover text-foreground"
+                      value={fontFamily}
+                      onChange={(e) => setFontFamily(e.target.value)}
+                    >
+                      {fontFamilies.map((font) => (
+                        <option key={font} value={font}>{font}</option>
+                      ))}
+                    </select>
+                    <select
+                      className="h-9 rounded-lg border px-2 text-sm watery-input glow-hover text-foreground"
+                      value={fontSize}
+                      onChange={(e) => setFontSize(e.target.value)}
+                    >
+                      {fontSizes.map((size) => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80">
+                      Text Color
+                      <input
+                        type="color"
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        className="h-6 w-8 rounded"
+                      />
+                    </label>
+                    <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80">
+                      Highlight
+                      <input
+                        type="color"
+                        value={highlightColor}
+                        onChange={(e) => setHighlightColor(e.target.value)}
+                        className="h-6 w-8 rounded"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Formatting */}
+                <div className="space-y-3 border-t border-muted pt-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Palette className="h-4 w-4" /> Formatting
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleBold()}><Bold className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleItalic()}><Italic className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleUnderline()}><Underline className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleStrike()}><Strikethrough className="w-4 h-4" /></button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleBulletList()}><List className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.toggleOrderedList()}><ListOrdered className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.insertHorizontalRule()}><SeparatorHorizontal className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.undo()}><Undo className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.redo()}><Redo className="w-4 h-4" /></button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.setTextAlign('left')}><AlignLeft className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.setTextAlign('center')}><AlignCenter className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.setTextAlign('right')}><AlignRight className="w-4 h-4" /></button>
+                    <button className="rounded-lg border px-2 py-2 text-xs watery-input glow-hover text-foreground/80" onClick={() => editorRef.current?.setTextAlign('justify')}><AlignJustify className="w-4 h-4" /></button>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <input
+                      type="url"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      placeholder="https://example.com"
+                      className="h-9 rounded-lg border px-3 text-xs watery-input glow-hover text-foreground placeholder:text-muted-foreground"
+                    />
+                    <button
+                      type="button"
+                      className="h-9 rounded-lg border px-3 text-xs watery-input glow-hover text-foreground/80"
+                      onClick={() => {
+                        if (linkUrl.trim()) {
+                          editorRef.current?.setLink(linkUrl.trim())
+                        } else {
+                          editorRef.current?.unsetLink()
+                        }
+                      }}
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Layout */}
+                <div className="space-y-3 border-t border-muted pt-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Palette className="h-4 w-4" /> Layout & Style
+                  </div>
+                  <label className="text-xs text-muted-foreground">Page Padding: {pagePadding}px</label>
+                  <input
+                    type="range"
+                    min="20"
+                    max="64"
+                    value={pagePadding}
+                    onChange={(e) => setPagePadding(parseInt(e.target.value))}
+                    className="w-full glow-hover slow-transition"
+                  />
+
+                  <label className="text-xs text-muted-foreground">Line Height: {lineHeight.toFixed(1)}</label>
+                  <input
+                    type="range"
+                    min="12"
+                    max="20"
+                    value={Math.round(lineHeight * 10)}
+                    onChange={(e) => setLineHeight(parseInt(e.target.value) / 10)}
+                    className="w-full glow-hover slow-transition"
+                  />
+
+                  <label className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80">
+                    Page Tint
+                    <input
+                      type="color"
+                      value={pageTint}
+                      onChange={(e) => setPageTint(e.target.value)}
+                      className="h-6 w-8 rounded"
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80"
+                      onClick={() => setShowBorder((v) => !v)}
+                    >
+                      {showBorder ? 'Hide Border' : 'Show Border'}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg border px-3 py-2 text-xs watery-input glow-hover text-foreground/80"
+                      onClick={() => setShowFooter((v) => !v)}
+                    >
+                      {showFooter ? 'Hide Footer' : 'Show Footer'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Images */}
+                <div className="space-y-3 border-t border-muted pt-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <ImageIcon className="h-4 w-4" /> Images
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    id="image-upload"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        setPendingImage(file)
+                        e.currentTarget.value = ''
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="block rounded-lg border px-3 py-2 text-xs watery-input glow-hover cursor-pointer text-center text-foreground/80"
+                  >
+                    Upload Image
+                  </label>
+                  <p className="text-xs text-muted-foreground">Paste images directly into the editor too.</p>
+                </div>
+
+                {/* Feedback Section */}
+                <div className="space-y-3 border-t border-muted pt-4">
+                  <label className="text-sm font-semibold text-foreground block">
+                    Feedback & Changes
+                  </label>
+                  <textarea
+                    placeholder="Describe what you want to change or improve..."
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    className="w-full border rounded-lg bg-background/80 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none h-28 watery-input glow-hover"
+                  />
+                </div>
+
+                {/* Max Pages Control */}
+                <div className="space-y-3 border-t border-muted pt-4">
+                  <label className="text-sm font-semibold text-foreground block">
+                    Maximum Pages: <span className="text-primary">{maxPages}</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="50"
+                    value={maxPages}
+                    onChange={(e) => setMaxPages(parseInt(e.target.value))}
+                    className="w-full cursor-pointer glow-hover slow-transition"
+                  />
+                  <p className="text-xs text-muted-foreground">Range: 1-50 pages</p>
                 </div>
 
                 {/* Actions */}
@@ -440,51 +718,55 @@ export default function PreviewPageContent() {
 
                   <div className="grid grid-cols-2 gap-2">
                     <Button
-                      onClick={handleDownloadImages}
-                      disabled={isDownloading || isDownloadingWord || totalPages === 0}
-                      variant="outline"
-                      className="gap-2 cta-secondary"
-                      title="Download report pages as PNG images"
+                      onClick={handleDownloadPDF}
+                      disabled={isDownloading || isDownloadingWord}
+                      className="w-full gap-1.5 cta-secondary"
                     >
                       {isDownloading ? (
                         <>
                           <Loader className="w-4 h-4 animate-spin" />
-                          Exporting...
+                          Wait...
                         </>
                       ) : (
                         <>
-                          <FileDown className="w-4 h-4" />
-                          PNG
+                          <span>Download</span>
+                          <span className="flex items-center justify-center font-bold text-[10px] tracking-wider bg-red-500/10 text-red-500 border border-red-500/20 px-1.5 py-0.5 rounded shadow-sm">
+                            PDF
+                          </span>
                         </>
                       )}
                     </Button>
+
                     <Button
                       onClick={handleDownloadWord}
-                      disabled={isDownloadingWord || isDownloading || totalPages === 0}
-                      variant="outline"
-                      className="gap-2 cta-secondary"
-                      title="Download report as Word document"
+                      disabled={isDownloadingWord || isDownloading}
+                      className="w-full gap-1.5 cta-secondary"
                     >
                       {isDownloadingWord ? (
                         <>
                           <Loader className="w-4 h-4 animate-spin" />
-                          Exporting...
+                          Wait...
                         </>
                       ) : (
                         <>
-                          <FileDown className="w-4 h-4" />
-                          Word
+                          <span>Download</span>
+                          <span className="flex items-center justify-center font-bold text-[10px] tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20 px-1.5 py-0.5 rounded shadow-sm">
+                            DOCX
+                          </span>
                         </>
                       )}
                     </Button>
                   </div>
 
-                  <Button
-                    asChild
-                    className="w-full cta-secondary"
-                  >
-                    <Link href="/">Back to Home</Link>
-                  </Button>
+                  <Link href="/" className="block">
+                    <Button variant="outline" className="w-full cta-secondary">
+                      Back to Home
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="text-xs text-muted-foreground rounded-lg border border-muted/60 bg-muted/20 p-3">
+                  Customize typography, layout, and colors on the right. Edits update inline in the page.
                 </div>
               </div>
             </ScrollArea>
