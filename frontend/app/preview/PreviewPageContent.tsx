@@ -22,7 +22,7 @@ const dataUrlToUint8Array = (dataUrl: string) => {
   return bytes
 }
 
-const downloadPdfClientSide = async (markdownPages: string[]) => {
+const downloadPdfClientSide = async (markdownPages: string[], htmlPages?: string[]) => {
   const html2canvas = (await import('html2canvas-pro')).default
   const { PDFDocument } = await import('pdf-lib')
 
@@ -31,21 +31,33 @@ const downloadPdfClientSide = async (markdownPages: string[]) => {
   const pageHeight = 841.89
   const margin = 24
 
-  for (const markdown of markdownPages) {
+  for (let i = 0; i < markdownPages.length; i++) {
+    const markdown = markdownPages[i]
+    const pageHtml = htmlPages?.[i]?.trim() ? htmlPages[i] : markdownToBasicHtml(markdown)
+
     const container = document.createElement('div')
     container.style.position = 'absolute'
     container.style.left = '-9999px'
     container.style.width = '794px'
     container.style.minHeight = '1123px'
-    container.style.padding = '48px'
+    container.style.padding = '0'
     container.style.background = '#ffffff'
-    container.style.color = '#0f172a'
-    container.style.opacity = '1'
     container.style.fontFamily = 'Arial, Helvetica, sans-serif'
-    container.style.fontSize = '16px'
-    container.style.lineHeight = '1.6'
     container.innerHTML = `
       <style>
+        .pdf-export-scope {
+          width: 794px;
+          min-height: 1123px;
+          background: #ffffff;
+          color: #0f172a;
+          font-size: 16px;
+          line-height: 1.7;
+          font-family: Arial, Helvetica, sans-serif;
+          border: 1px solid #e2e8f0;
+          box-sizing: border-box;
+          padding: 76px 68px;
+        }
+
         .pdf-export-scope, .pdf-export-scope * {
           opacity: 1 !important;
           color: #0f172a !important;
@@ -54,18 +66,109 @@ const downloadPdfClientSide = async (markdownPages: string[]) => {
           mix-blend-mode: normal !important;
           -webkit-text-fill-color: #0f172a !important;
         }
+
+        .pdf-export-scope h1 {
+          font-size: 30px;
+          font-weight: 800;
+          line-height: 1.2;
+          margin: 0 0 14px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid #1d4ed8;
+        }
+
+        .pdf-export-scope h2 {
+          font-size: 24px;
+          font-weight: 700;
+          line-height: 1.3;
+          margin: 22px 0 10px;
+          padding-bottom: 5px;
+          border-bottom: 1px solid #cbd5e1;
+        }
+
+        .pdf-export-scope h3,
+        .pdf-export-scope h4 {
+          font-weight: 700;
+          margin: 16px 0 8px;
+          line-height: 1.35;
+        }
+
+        .pdf-export-scope p {
+          margin: 0 0 12px;
+          line-height: 1.75;
+          text-align: justify;
+        }
+
+        .pdf-export-scope ul,
+        .pdf-export-scope ol {
+          margin: 8px 0 14px;
+          padding-left: 24px;
+        }
+
+        .pdf-export-scope li {
+          margin: 4px 0;
+          line-height: 1.7;
+        }
+
+        .pdf-export-scope strong {
+          font-weight: 700;
+        }
+
+        .pdf-export-scope mark {
+          background: #fde68a !important;
+          color: #111827 !important;
+          padding: 0 2px;
+          border-radius: 2px;
+        }
+
         .pdf-export-scope a {
           color: #1d4ed8 !important;
           text-decoration: underline;
         }
+
+        .pdf-export-scope blockquote {
+          border-left: 4px solid #94a3b8;
+          margin: 12px 0;
+          padding: 8px 14px;
+          background: #f8fafc;
+          border-radius: 0 6px 6px 0;
+        }
+
+        .pdf-export-scope table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 12px 0;
+          font-size: 14px;
+        }
+
+        .pdf-export-scope th,
+        .pdf-export-scope td {
+          border: 1px solid #cbd5e1;
+          padding: 8px 10px;
+          text-align: left;
+        }
+
+        .pdf-export-scope th {
+          background: #f1f5f9;
+          font-weight: 700;
+        }
+
         .pdf-export-scope code,
         .pdf-export-scope pre {
           color: #0f172a !important;
           background: #f8fafc !important;
           border-color: #e2e8f0 !important;
         }
+
+        .pdf-export-scope pre {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 12px 14px;
+          white-space: pre-wrap;
+          word-break: break-word;
+          margin: 10px 0;
+        }
       </style>
-      <div class="pdf-export-scope">${markdownToBasicHtml(markdown)}</div>
+      <div class="pdf-export-scope">${pageHtml}</div>
     `
     document.body.appendChild(container)
 
@@ -273,7 +376,7 @@ const handleDownloadPDF = async () => {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Unknown error' }))
       if (res.status === 501) {
-        await downloadPdfClientSide(markdownPages)
+        await downloadPdfClientSide(markdownPages, displayPagesHtml)
         toast({ title: 'Success', description: `PDF with ${markdownPages.length} page(s) downloaded!` })
         return
       }
@@ -295,7 +398,7 @@ const handleDownloadPDF = async () => {
     const message = err instanceof Error ? err.message : 'Failed to download PDF'
     if (message.toLowerCase().includes('client-side generation')) {
       try {
-        await downloadPdfClientSide(pages || [])
+        await downloadPdfClientSide(pages || [], displayPagesHtml)
         toast({ title: 'Success', description: `PDF with ${(pages || []).length} page(s) downloaded!` })
         return
       } catch {
